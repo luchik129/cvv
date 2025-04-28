@@ -1,0 +1,74 @@
+.ui.bulleted.list .list>.item:before, .ui.bulleted.list>.item:before, ul.ui.list li:before {
+	content: '•';
+}
+.ui .dataTable-container {
+	margin: 0;
+}
+.ui .dataTable .input {
+	font-weight: normal;
+}
+.ui .dataTable .dataTable-sortElement {
+	line-height: initial;
+}
+.ui .section {
+	border: initial;
+	background-color: initial;
+	box-shadow: initial;
+}
+.ui.secondary.segment .dataTable {
+	color: rgba(0, 0, 0, 1);
+}
+.ui.dropdown.icon.button .text .icon,
+.ui.dropdown.icon.button .menu>.item>.icon {
+	margin-right: 0;
+}
+.ui .dataTable-table .tacky-left.tacky-left-origin {
+	box-shadow: 1px 1px 0 0 #AAA,
+				4px 0px 3px -1px rgba(0, 0, 0, 0);
+}
+.ui .error {
+	color: initial;
+}
+swift-box:hover .swift-box-text {
+	color: initial !important;
+}
+.ui.modal {
+	transition: margin-top 250ms;
+}
+.ui .dataTable td.shrink,
+.ui .dataTable th.shrink {
+	min-width: 0;
+	width: 1px;
+}
+table tr .ui.vertical.buttons .button {
+	width: initial;
+}
+
+.sub.header img.chat {
+	height:16px;
+	cursor:pointer;
+}
+
+.sub.header .id-badge-link {
+	font-size: 1.5rem;
+}
+
+a {
+	color: inherit;
+	text-decoration: underline;
+	background: inherit;
+}
+
+a:hover {
+	color: black
+}
+
+.ui.page.dimmer {
+	-webkit-perspective: none !important;
+	perspective: none !important;
+}
+
+/* For some reason the public_layout sets html to content-box, but the rest of Focus assumes border-box */
+.ui.form {
+	box-sizing : border-box !important;
+}

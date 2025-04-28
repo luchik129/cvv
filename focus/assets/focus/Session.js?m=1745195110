@@ -1,0 +1,260 @@
+(() => {
+	'use strict';
+
+	const Focus = window.Focus;
+
+	Focus.Session = {
+		logout,
+		navigate,
+		getData,
+		deleteJWT,
+	};
+
+	const highlight_class = 'focus-session-highlight';
+	let   navigating      = false;
+
+	// Remove temporary GET parameters from the current URL
+	cleanURL();
+
+	// Set the JWT cookie immediately
+	setJWTCookie();
+
+	// Set the JWT cookie when the page is shown
+	window.addEventListener('pageshow', () => setJWTCookie());
+
+	// Set the JWT cookie when the user mouses over the page
+	document.addEventListener('pointerenter', () => setJWTCookie());
+
+	// Set the JWT cookie when the user mouses out of an iframe
+	document.addEventListener('pointerleave', (e) => {
+		if(e.target.tagName === 'IFRAME') {
+			setJWTCookie();
+		}
+	}, true);
+
+	// Set the JWT cookie when the user clicks the page
+	document.addEventListener('pointerdown', () => setJWTCookie());
+
+	// Set the JWT cookie when the user activates the tab
+	document.addEventListener('visibilitychange', (e) => {
+		if(document.visibilityState === 'visible') {
+			setJWTCookie(true);
+		}
+	});
+
+	// Set the JWT cookie upon navigation
+	if(window === window.top) {
+		window.addEventListener('beforeunload', () => {
+			if(!Focus.login_page) {
+				setJWTCookie();
+			}
+		});
+	}
+
+	// Append the JWT as a header to all jQuery AJAX calls
+	if(window.jQuery) {
+		window.jQuery.ajaxPrefilter((options, original_options, jq_xhr) => {
+			const info = getSessionInfo();
+
+			if(!info) {
+				return;
+			}
+
+			// Convert underscores to dashes in the header name
+			const key = info.key.replace(/_/g, '-');
+
+			jq_xhr.setRequestHeader(`x-${key}`, info.jwt);
+		});
+	}
+
+	function logout() {
+		const location = window.location;
+		const prefix   = location.search ? '&' : '?';
+
+		const url = [
+			location.origin,
+			location.pathname,
+			location.search,
+			`${prefix}__logout__`,
+			location.hash,
+		].join('');
+
+		navigate(url);
+	}
+
+	function navigate(url) {
+		if(navigating) {
+			return;
+		}
+
+		navigating = true;
+
+		// For security, clear the page content
+		document.documentElement.innerHTML = '';
+
+		const current_url = window.location.toString();
+		const new_url     = `${url || current_url}`;
+		const has_hash    = current_url.includes('#') || new_url.includes('#');
+		let   tmp_url     = null;
+
+		// If only the hash changed, set a temporary URL to force navigation
+		if(has_hash) {
+			const current_base = current_url.split('#').shift();
+			const new_base     = new_url.split('#').shift();
+			const prefix       = new_base.includes('?') ? '&' : '?';
+
+			if(current_base === new_base) {
+				tmp_url = `${new_base}${prefix}`;
+
+				window.history.replaceState(window.history.state, '', tmp_url);
+			}
+		}
+
+		window.location.replace(new_url);
+
+		// For aesthetic purposes, hide the temporary URL if we've used it.
+		// This is not guaranteed to run in some browsers since navigation has started, but it's worth trying anyway.
+		if(tmp_url) {
+			window.history.replaceState(window.history.state, '', new_url);
+		}
+	}
+
+	function getData() {
+		const info = getSessionInfo();
+
+		return info ? getJWTData(info.jwt) : {};
+	}
+
+	function deleteJWT() {
+		const info = getSessionInfo();
+
+		if(info) {
+			info.jwt = '';
+
+			setJWTCookie();
+		}
+	}
+
+	function cleanURL() {
+		const location = window.location;
+		const search   = location.search.replace(/(?:(\?)|&)__logout__/g, '$1').replace(/\?+$/, '');
+
+		if(search === location.search) {
+			return;
+		}
+
+		const url = [
+			location.origin,
+			location.pathname,
+			search,
+			location.hash,
+		].join('');
+
+		window.history.replaceState(window.history.state, '', url);
+	}
+
+	function getSessionInfo() {
+		return Focus.session_info;
+	}
+
+	function setJWTCookie(highlight_changes = false) {
+		const info = getSessionInfo();
+
+		if(navigating || !info) {
+			return;
+		}
+
+		const current   = Cookies.get(info.key);
+		const logged_in = +Cookies.get('session_timeout') > 0
+
+		// Only set the cookie if it changed
+		if(current !== info.jwt) {
+			Cookies.set(info.key, info.jwt, info.cookie_options);
+		}
+
+		if(logged_in) {
+			const changes       = getJWTChanges(current, info.jwt);
+			const user_mismatch = changes.has('__user_class') || changes.has('__user_id');
+
+			if(user_mismatch || Focus.login_page) {
+				navigate();
+
+				return;
+			}
+
+			if(highlight_changes) {
+				highlightJWTChanges(changes);
+			}
+		}
+	}
+
+	function getJWTChanges(token_before, token_after) {
+		const changes = new Set();
+
+		if(!token_before || token_before === token_after) {
+			return changes;
+		}
+
+		const before = getJWTData(token_before);
+		const after  = getJWTData(token_after);
+
+		if(!before) {
+			return changes;
+		}
+
+		const keys = Object.keys(Object.assign({}, before, after));
+
+		for(const key of keys) {
+			if(before[key] !== after[key]) {
+				changes.add(key);
+			}
+		}
+
+		return changes;
+	}
+
+	function getJWTData(jwt) {
+		if(jwt) {
+			try {
+				const parts = jwt.split('.');
+				const data  = JSON.parse(atob(parts[1]));
+
+				return data.session;
+			}
+			catch(e) {}
+		}
+
+		return {};
+	}
+
+	function highlightJWTChanges(changes) {
+		if(!changes.size) {
+			return;
+		}
+
+		// UserProgressPeriod uses the UserMP dropdown
+		if(changes.has('UserProgressPeriod')) {
+			changes.add('UserMP');
+		}
+
+		const selector = [...changes].map(key => `[data-site-session~="${key}"]`).join(', ');
+		const existing = document.querySelectorAll(`.${highlight_class}`);
+		const elements = document.querySelectorAll(selector);
+
+		// Remove existing highlight classes
+		for(const element of existing) {
+			element.classList.remove(highlight_class);
+
+			// Trigger reflow to reset animations
+			void element.offsetWidth;
+		}
+
+		// Add new highlight classes
+		for(const element of elements) {
+			element.classList.add(highlight_class);
+
+			// Trigger reflow to start animations
+			void element.offsetWidth;
+		}
+	}
+})();

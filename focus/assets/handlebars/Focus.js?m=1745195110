@@ -1,0 +1,474 @@
+/**
+ * @copyright Copyright (C) 2006 Andrew Schmadeke. All rights reserved.
+ * @package Focus/Finance
+ * This package can be modified by the licencee, but the license is non-transferrable.
+ */
+
+/**
+ * Create top-level Focus namespace.
+ */
+if (typeof Focus == 'undefined' || !Focus) {
+	/**
+	 * 	@namespace The top-level Focus namespace.
+	 */
+	Focus = {};
+
+	/**
+	 * @namespace The UI component namespace.
+	 */
+	Focus.ui = {};
+
+	/**
+	 * @namespace The forms component namespace.
+	 */
+	Focus.forms = {};
+}
+
+/**
+ * Given a namespace (e.g. 'Focus.ui'), ensure that every object in the
+ * namespace path exists (i.e. for 'Focus.ui', create the ui object if it doesn't already exist).
+ */
+Focus.namespace = function() {
+	var obj = null;
+	for (var i = 0; i < arguments.length; i++) {
+		var names = (""+arguments[i]).split(".");
+		obj = Focus;
+
+		for (var j = (names[0] == 'Focus' ? 1 : 0); j < names.length; j++) {
+			obj[names[j]] = obj[names[j]] || {};
+			obj = obj[names[j]];
+		}
+	}
+
+	return obj;
+};
+
+/**
+ * Evaluates and returns the object referred to by a fully-qualified name,
+ * e.g. Focus.getClassForName('Focus.ui.DynamicTextInput') returns a reference to the object
+ * Focus.ui.DynamicTextInput.
+ */
+Focus.getClassForName = function(name) {
+	var names = name.split(".");
+
+	var obj = Focus;
+	for (var j = (names[0] == 'Focus' ? 1 : 0); j < names.length; j++) {
+		if (!(names[j] in obj)) {
+			return null;
+		}
+		obj = obj[names[j]];
+	}
+
+	return obj;
+};
+
+/**
+ * Setting <code>quietMode</code> to true causes <code>log</code> to return immediately.
+ *
+ * @type boolean
+ * @default true if jsQuietMode is set in the document location, false otherwise.
+ */
+Focus.quietMode = new RegExp('jsQuietMode').test(document.location.search);
+
+/**
+ * Returns the name of the name of the current browser
+ */
+Focus.getBrowser = function() {
+	var sUsrAg = navigator.userAgent;
+
+	// Several of the user agents contain more than one of these, so the order matters
+	if (sUsrAg.indexOf("Firefox") > -1) {
+		return "Firefox";
+	}
+	else if (sUsrAg.indexOf("SamsungBrowser") > -1) {
+		return "Samsung";
+	}
+	else if (sUsrAg.indexOf("Opera") > -1 || sUsrAg.indexOf("OPR") > -1) {
+		return "Opera";
+	}
+	else if (sUsrAg.indexOf("Trident") > -1) {
+		return "Internet Explorer";
+	}
+	else if (sUsrAg.indexOf("Edge") > -1) {
+		// Non-chromium Edge
+		return "Edge";
+	}
+	else if (sUsrAg.indexOf("Chrome") > -1) {
+		return "Google Chrome or Chromium";
+	}
+	else if (sUsrAg.indexOf("Safari") > -1) {
+		return "Safari";
+	}
+
+	return "unknown";
+};
+
+/**
+ * If <code>console</code> is not accessible, and no element with id "FocusLogOutputContainer" is found,
+ * log messages will be appended to <code>logMessages</code>.
+ */
+Focus.logMessages = [];
+/**
+ * Log a message. Focus.log will pass messages to console.log if available.
+ * Otherwise, it will try to append list items to an element with id
+ * FocusLogOutputContainer. If no such element is found, it will store log
+ * messages in the Focus.logMessages array. If Focus.quietMode is set,
+ * Focus.log will return immediately with no effect. Quiet mode will be enabled
+ * if jsQuietMode is set in the URL.
+ *
+ * <code>log</code> takes a variable number of arguments and processes them all in order.
+ */
+Focus.log = function() {
+	if (Focus.quietMode) {
+		return;
+	}
+	if (typeof console == 'undefined' || !('log' in console) || jQuery.type(console.log) != 'function') {
+		var args = Array.prototype.slice.call(arguments);
+		var message = '';
+		for (var i in args) {
+			message += args[i];
+		}
+		if (Focus.logOutputContainer) {
+			var li = document.createElement('li');
+			li.appendChild(document.createTextNode(message));
+			Focus.logOutputContainer.appendChild(li);
+		} else if (Focus.logOutputContainer === false) {
+			Focus.logMessages.push(message);
+		} else if (Focus.logOutputContainer === null) {
+			var c = document.getElementById('FocusLogOutputContainer');
+			if (c) {
+				Focus.logOutputContainer = c;
+				var li = document.createElement('li');
+				li.appendChild(document.createTextNode(message));
+				Focus.logOutputContainer.appendChild(li);
+			} else {
+				Focus.logOutputContainer = false;
+			}
+		}
+		return;
+	} else {
+		console.log.apply(console, arguments);
+	}
+};
+/**
+ * If no console object is available, append log messages to this element, if it is non-null. Must have id
+ * "FocusLogOutputContainer".
+ */
+Focus.logOutputContainer = null;
+
+//str="foo\nbar\nquux";str.replace(new RegExp('^([^\n]*)((.|\n)*)$'), '$1')
+
+Focus.dirRegExp = new RegExp('^([^\n]*)((.|\n)*)$');
+Focus.dirMaxRecursionDepth = 0;
+Focus.dir = function(object, maxDepth) {
+	var d = Focus.dirMaxRecursionDepth;
+	Focus.dirMaxRecursionDepth = maxDepth ? maxDepth : 0;
+	Focus.r_dir(object, true);
+	Focus.dirMaxRecursionDepth = d;
+};
+
+Focus.r_dir = function(object, recursive, indent, depth) {
+	var visited = false;
+	var hasProperty = false;
+	var propertyValue = null;
+	var accessError = false;
+	indent = typeof indent == 'string' ? indent : '';
+	depth = depth ? depth : 0;
+	var type = jQuery.type(object);
+	if (type == 'object') {
+		for (var p in object) {
+			if (p === '__dir_visited') {
+				continue;
+			}
+			try {
+				hasProperty = object.hasOwnProperty(p);
+			} catch (e) {
+				hasProperty = null;
+			}
+			if (p !== null && hasProperty) {
+				try {
+					propertyValue = object[p];
+					accessError = false;
+				} catch (e) {
+					accessError = true;
+				}
+				if (propertyValue === null) {
+					Focus.log(indent + p + ': ' + (accessError ? '(property access failed)' : propertyValue));
+				} else if (recursive && typeof propertyValue == 'object' && depth < Focus.dirMaxRecursionDepth) {
+					try {
+						visited = '__dir_visited' in propertyValue;
+					} catch (e) {
+						visited = null;
+					}
+					if (visited === true) {
+						Focus.log(indent + p + ': ' + propertyValue + ' (cycle)');
+					} else if (visited === false) {
+						propertyValue.__dir_visited = true;
+						Focus.log(indent + p + ':');
+						Focus.r_dir(propertyValue, true, indent + '\t', depth + 1);
+						delete propertyValue.__dir_visited;
+					} else if (visited === null) {
+						Focus.log(indent + p + ':');
+						Focus.r_dir(propertyValue, true, indent + '\t', depth + 1);
+					}
+				} else if (typeof propertyValue == 'string') {
+					Focus.log(indent + p + ': "' + propertyValue + '"');
+				} else {
+					try {
+						Focus.log(indent + p + ': ' + propertyValue
+							+ (depth >= Focus.dirMaxRecursionDepth ?
+								' .' :
+								''));
+					} catch (e) {
+						Focus.log(indent + p + ': (can\'t convert to string)');
+					}
+				}
+			}
+		}
+	} else if (type == 'function') {
+		type += '';
+		type.replace(Focus.dirRegExp, '$1');
+	} else {
+		try {
+			if ('toString' in object) {
+				Focus.log(indent + object.toString());
+			} else {
+				Focus.log(indent + object);
+			}
+		} catch (e) {
+			Focus.log(indent + object);
+		}
+	}
+};
+
+/**
+ * Copies all properties of <code>parent</code>'s prototype to <code>descendant</code>'s prototype.
+ *
+ * @param descendent descendant class
+ * @param parent parent class
+ */
+Focus.inherit = function(descendant, parent) {
+	if (!parent) {
+		throw new Error("Attempt to inherit from invalid parent")
+	}
+	if (!descendant) {
+		throw new Error("Attempt to inherit to invalid descendant");
+	}
+//    var constructor = parent.toString();
+//    var match = constructor.match( /\s*function (.*)\(/ );
+//    Focus.log(match);
+//    if (match != null) {
+//    	descendant.prototype[match[1]] = parent;
+//    }
+	window.pp = parent.prototype;
+    for (var m in parent.prototype) {
+        descendant.prototype[m] = parent.prototype[m];
+    }
+};
+
+/**
+ * Returns true if and only if all properties in <code>parent</code>'s prototype are in
+ * <code>descendant</code>.
+ *
+ * @return true if <code>descendant</code> inherits from <code>parent</code>
+ */
+Focus.isA = function(descendant, parent) {
+	if (!descendant) {
+		throw new Error('Invalid descendent');
+	}
+	if (!parent) {
+		throw new Error('Invalid parent');
+	}
+	for (var m in parent.prototype) {
+		if (!(m in descendant)) {
+			return false;
+		}
+	}
+	return true;
+};
+
+Focus.time = function(f) {
+	var before = new Date().getTime();
+	f();
+	return new Date().getTime() - before;
+};
+
+// util
+
+/**
+ * Returns true iff obj has no properties, false otherwise.
+ *
+ * @function
+ * @param obj
+ *
+ */
+function isNotEmpty(obj) {
+	for (var i in obj) {
+		return true;
+	}
+	return false;
+}
+
+// for object methods as callbacks
+function bind(obj, method) {
+	return function() {
+		obj[method]()
+	};
+}
+
+/* DOM functions
+ *
+ */
+function removeAllChildren(node) {
+	while (node.hasChildNodes())
+	{
+		node.removeChild(node.firstChild);
+	}
+}
+
+if (typeof KeyEvent == "undefined") {
+    var KeyEvent = {
+        DOM_VK_CANCEL: 3,
+        DOM_VK_HELP: 6,
+        DOM_VK_BACK_SPACE: 8,
+        DOM_VK_TAB: 9,
+        DOM_VK_CLEAR: 12,
+        DOM_VK_RETURN: 13,
+        DOM_VK_ENTER: 14,
+        DOM_VK_SHIFT: 16,
+        DOM_VK_CONTROL: 17,
+        DOM_VK_ALT: 18,
+        DOM_VK_PAUSE: 19,
+        DOM_VK_CAPS_LOCK: 20,
+        DOM_VK_ESCAPE: 27,
+        DOM_VK_SPACE: 32,
+        DOM_VK_PAGE_UP: 33,
+        DOM_VK_PAGE_DOWN: 34,
+        DOM_VK_END: 35,
+        DOM_VK_HOME: 36,
+        DOM_VK_LEFT: 37,
+        DOM_VK_UP: 38,
+        DOM_VK_RIGHT: 39,
+        DOM_VK_DOWN: 40,
+        DOM_VK_PRINTSCREEN: 44,
+        DOM_VK_INSERT: 45,
+        DOM_VK_DELETE: 46,
+        DOM_VK_0: 48,
+        DOM_VK_1: 49,
+        DOM_VK_2: 50,
+        DOM_VK_3: 51,
+        DOM_VK_4: 52,
+        DOM_VK_5: 53,
+        DOM_VK_6: 54,
+        DOM_VK_7: 55,
+        DOM_VK_8: 56,
+        DOM_VK_9: 57,
+        DOM_VK_SEMICOLON: 59,
+        DOM_VK_EQUALS: 61,
+        DOM_VK_A: 65,
+        DOM_VK_B: 66,
+        DOM_VK_C: 67,
+        DOM_VK_D: 68,
+        DOM_VK_E: 69,
+        DOM_VK_F: 70,
+        DOM_VK_G: 71,
+        DOM_VK_H: 72,
+        DOM_VK_I: 73,
+        DOM_VK_J: 74,
+        DOM_VK_K: 75,
+        DOM_VK_L: 76,
+        DOM_VK_M: 77,
+        DOM_VK_N: 78,
+        DOM_VK_O: 79,
+        DOM_VK_P: 80,
+        DOM_VK_Q: 81,
+        DOM_VK_R: 82,
+        DOM_VK_S: 83,
+        DOM_VK_T: 84,
+        DOM_VK_U: 85,
+        DOM_VK_V: 86,
+        DOM_VK_W: 87,
+        DOM_VK_X: 88,
+        DOM_VK_Y: 89,
+        DOM_VK_Z: 90,
+        DOM_VK_CONTEXT_MENU: 93,
+        DOM_VK_NUMPAD0: 96,
+        DOM_VK_NUMPAD1: 97,
+        DOM_VK_NUMPAD2: 98,
+        DOM_VK_NUMPAD3: 99,
+        DOM_VK_NUMPAD4: 100,
+        DOM_VK_NUMPAD5: 101,
+        DOM_VK_NUMPAD6: 102,
+        DOM_VK_NUMPAD7: 103,
+        DOM_VK_NUMPAD8: 104,
+        DOM_VK_NUMPAD9: 105,
+        DOM_VK_MULTIPLY: 106,
+        DOM_VK_ADD: 107,
+        DOM_VK_SEPARATOR: 108,
+        DOM_VK_SUBTRACT: 109,
+        DOM_VK_DECIMAL: 110,
+        DOM_VK_DIVIDE: 111,
+        DOM_VK_F1: 112,
+        DOM_VK_F2: 113,
+        DOM_VK_F3: 114,
+        DOM_VK_F4: 115,
+        DOM_VK_F5: 116,
+        DOM_VK_F6: 117,
+        DOM_VK_F7: 118,
+        DOM_VK_F8: 119,
+        DOM_VK_F9: 120,
+        DOM_VK_F10: 121,
+        DOM_VK_F11: 122,
+        DOM_VK_F12: 123,
+        DOM_VK_F13: 124,
+        DOM_VK_F14: 125,
+        DOM_VK_F15: 126,
+        DOM_VK_F16: 127,
+        DOM_VK_F17: 128,
+        DOM_VK_F18: 129,
+        DOM_VK_F19: 130,
+        DOM_VK_F20: 131,
+        DOM_VK_F21: 132,
+        DOM_VK_F22: 133,
+        DOM_VK_F23: 134,
+        DOM_VK_F24: 135,
+        DOM_VK_NUM_LOCK: 144,
+        DOM_VK_SCROLL_LOCK: 145,
+        DOM_VK_COMMA: 188,
+        DOM_VK_PERIOD: 190,
+        DOM_VK_SLASH: 191,
+        DOM_VK_BACK_QUOTE: 192,
+        DOM_VK_OPEN_BRACKET: 219,
+        DOM_VK_BACK_SLASH: 220,
+        DOM_VK_CLOSE_BRACKET: 221,
+        DOM_VK_QUOTE: 222,
+        DOM_VK_META: 224
+    };
+}
+
+/* String functions
+ *
+ */
+
+function stringStartsWith(string, substring) {
+	return string.substr(0, substring.length) == substring;
+}
+
+function escapeHTML(unsafe) {
+	return unsafe
+	.replace("&", "&amp;")
+	.replace(">", "&gt;")
+	.replace("<", "&lt;");
+}
+
+/* other ...
+ *
+ */
+function Dimension(width, height) {
+	this.width = width;
+	this.height = height;
+}
+
+Dimension.prototype.toString = function() {
+	return '(' + this.width + ', ' + this.height + ')';
+};

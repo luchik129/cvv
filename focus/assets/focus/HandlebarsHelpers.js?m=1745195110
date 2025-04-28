@@ -1,0 +1,13 @@
+(() => {
+	'use strict';
+
+	// Strip Tags
+	Handlebars.registerHelper('stripTags', (content) => {
+		return new Handlebars.SafeString(Focus.stripTags(content));
+	});
+
+	// Sanitize HTML
+	Handlebars.registerHelper('userContent', (content) => {
+		return new Handlebars.SafeString(Focus.sanitizeHTML(content));
+	});
+})();

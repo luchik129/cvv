@@ -1,0 +1,151 @@
+(() => {
+	'use strict';
+
+	const Focus  = window.Focus = window.Focus || {};
+	let   events = null;
+
+	Object.assign(Focus, {
+		/**
+		 * Gets the current time in milliseconds based on the server date
+		 *
+		 * @returns {Number} The time in milliseconds
+		 */
+		now() {
+			if(!Focus.has_static_date || !Focus.server_date) {
+				return Date.now();
+			}
+
+			const server_date = Focus.server_date;
+			const date        = new Date();
+			const hours       = `${date.getHours()}`.padStart(2, '0');
+			const minutes     = `${date.getMinutes()}`.padStart(2, '0');
+			const seconds     = `${date.getSeconds()}`.padStart(2, '0');
+
+			return new Date(`${server_date}T${hours}:${minutes}:${seconds}`).getTime();
+		},
+
+		/**
+		 * Strips HTML tags from a string
+		 *
+		 * @param {String} html
+		 */
+		stripTags(html) {
+			const tmp = document.createElement('div');
+
+			tmp.innerHTML = html;
+
+			return tmp.textContent;
+		},
+
+		/**
+		 * Sanitizes an HTML string to remove potentially malicious content
+		 *
+		 * @param {String} html
+		 */
+		sanitizeHTML(html) {
+			const tmp = document.createElement('div');
+
+			tmp.innerHTML = html;
+
+			const invalid_tags = new Set([
+				'base',
+				'embed',
+				'form',
+				'link',
+				'meta',
+				'object',
+				'script',
+				'style',
+			]);
+
+			const invalid_attributes = new Set([
+				'class',
+			]);
+
+			const valid_class_names = new Set([
+				'ck',
+				'image',
+				'legacy-template-wrapper',
+				'media',
+				'resizable',
+				'table',
+				'table-bordered',
+			]);
+
+			const valid_class_name_patterns = new Set([
+				new RegExp('^ck[-a-zA-Z]+$'),
+				new RegExp('^marker[-a-zA-Z]+$'),
+			])
+
+			function isValidClassName(class_name) {
+				if(valid_class_names.has(class_name)) {
+					return true;
+				}
+
+				for(const pattern of valid_class_name_patterns) {
+					if(class_name.match(pattern)) {
+						return true;
+					}
+				}
+
+				return false;
+			}
+
+			for(const element of tmp.querySelectorAll('*')) {
+				const tag_name = element.tagName.toLowerCase();
+
+				// Remove invalid tags
+				if(invalid_tags.has(tag_name)) {
+					element.remove();
+					continue;
+				}
+
+				// Remove javascript links
+				if(tag_name === 'a' && element.href.trim().toLowerCase().startsWith('javascript:')) {
+					element.removeAttribute('href');
+				}
+
+				// Remove invalid attributes
+				const attributes = element.getAttributeNames();
+
+				for(const attribute of attributes) {
+					if(invalid_attributes.has(attribute) || attribute.startsWith('on')) {
+						if(attribute === 'class' && !!element.className && !!element.className.length) {
+							for(let class_name of element.className.split(' ')) {
+								class_name = class_name.trim();
+
+								if(isValidClassName(class_name)) {
+									continue;
+								}
+								else if(class_name !== '') {
+									element.classList.remove(class_name);
+								}
+							}
+
+							if(element.className.trim() === '') {
+								element.removeAttribute(attribute);
+							}
+						}
+						else {
+							element.removeAttribute(attribute);
+						}
+					}
+				}
+
+				// Remove invalid position values
+				if(element.style.position && element.style.position !== 'static' && element.style.position !== 'relative') {
+					element.style.setProperty('position', 'relative', 'important');
+				}
+			}
+
+			return tmp.innerHTML;
+		}
+	});
+
+	// Generic event emitter - A getter is used for late binding
+	Object.defineProperty(Focus, 'events', {
+		get() {
+			return events || (events = new Focus.Emitter());
+		},
+	});
+})();

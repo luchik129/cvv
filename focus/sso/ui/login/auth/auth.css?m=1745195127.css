@@ -1,0 +1,11 @@
+.sso-auth-container {
+	display : flex;
+}
+
+.sso-auth-container .sso-auth-fields {
+	flex : 1 1 auto;
+}
+
+.sso-auth-container .sso-auth-button-container {
+	margin-left : 1em;
+}

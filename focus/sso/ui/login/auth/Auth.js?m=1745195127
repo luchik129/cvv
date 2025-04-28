@@ -1,0 +1,149 @@
+(function(global) {
+	const template   = Template.SSO.Auth;
+	const controller = Controller.SSO.Auth;
+	const alert      = global.Focus && global.Focus.alert ? global.Focus.alert : global.alert;
+
+	function Auth() {
+		// Update the auth UI
+		function update(el, username, token) {
+			const username_el = el.querySelector('.sso-auth-username');
+			const password_el = el.querySelector('.sso-auth-password');
+			const token_el    = el.querySelector('.sso-auth-token');
+			const button_els  = el.querySelectorAll('button, .button');
+
+			username_el.value = username;
+			password_el.value = '************';
+			token_el.value    = token;
+
+			// Disable the username/password inputs
+			username_el.disabled = true;
+			password_el.disabled = true;
+
+			// Disable the buttons
+			for(const button_el of button_els) {
+				// Set 'disabled'
+				button_el.disabled = true;
+
+				// Add the 'disabled' class
+				button_el.classList.add('disabled');
+			}
+
+			// Dispatch a change event on the token input
+			token_el.dispatchEvent(new Event('change', { bubbles : true }));
+		}
+
+		// Authenticate a set of credentials
+		async function authenticate(el, un, pw) {
+			// Get the buttons
+			const button_els = el.querySelectorAll('button, .button');
+
+			// Add the 'loading' class to the buttons
+			for(const button_el of button_els) {
+				button_el.classList.add('loading');
+			}
+
+			try {
+				// Authenticate using the credentials
+				const { usernames, token } = await controller.authenticate(un, pw);
+
+				// Update the auth UI
+				for(const username of usernames) {
+					update(el, username, token);
+				}
+			}
+			// Alert any errors
+			catch(e) {
+				alert(e.message);
+			}
+
+			// Remove the 'loading' class from the buttons
+			for(const button_el of button_els) {
+				button_el.classList.remove('loading');
+			}
+		}
+
+		// Render the auth UI
+		function render(el) {
+			var sso = !!controller.$context.sso_profile_id;
+
+			el.innerHTML = template({ sso });
+
+			var username_el = el.querySelector('.sso-auth-username');
+			var password_el = el.querySelector('.sso-auth-password');
+			var auth_el     = el.querySelector('.sso-auth-button');
+			var token_el    = el.querySelector('.sso-auth-token');
+
+			// If this auth component is being rendered
+			// inside a form, reset it when the form is reset.
+			const form = el.closest('form');
+
+			if(form) {
+				// When the form is reset
+				form.addEventListener('reset', () => {
+					// Reset the token value
+					token_el.value = '';
+
+					// Enable the username/password inputs if not using SSO
+					if(!sso) {
+						username_el.disabled = false;
+						password_el.disabled = false;
+					}
+
+					// Enable any buttons
+					var button_els = Array.from(el.querySelectorAll('button, .button'));
+
+					button_els.forEach((button_el) => {
+						// Clear 'disabled'
+						button_el.disabled = false;
+
+						// Remove the 'disabled' class
+						button_el.classList.remove('disabled');
+					});
+				});
+			}
+
+			// If logged in via an SSO provider, set up the SSO login UI
+			if(controller.$context.sso_profile_id) {
+				// Get the SSO profile that was used to log in
+				var profiles = SSO.Login.DEFAULT_PROFILES.filter(function(profile) {
+					return profile.profile_id === controller.$context.sso_profile_id;
+				});
+
+				// Create the login UI
+				var login = new SSO.Login(SSO.Login.TARGETS.BLANK, profiles, true);
+
+				// Render the login UI
+				login.render(el.querySelector('.sso-login-container'));
+
+				// Handle user authentication events
+				login.on('auth', (token, usernames) => {
+					for(let username of usernames) {
+						update(el, username, token);
+					}
+				});
+			}
+			else {
+				// Handle the authenticate button
+				auth_el.addEventListener('click', function() {
+					authenticate(el, username_el.value, password_el.value);
+				});
+
+				// Handle the enter key
+				el.addEventListener('keypress', function(e) {
+					if(e.key === 'Enter') {
+						e.preventDefault();
+						e.stopPropagation();
+
+						auth_el.click();
+					}
+				});
+			}
+		}
+
+		// Public methods
+		this.render = render;
+	}
+
+	global.SSO      = global.SSO || {};
+	global.SSO.Auth = Auth;
+})(window);

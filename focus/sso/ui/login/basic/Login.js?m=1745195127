@@ -1,0 +1,210 @@
+// EventEmitter polyfill from https://cdn.jsdelivr.net/npm/eventemitter3@5.0.1/index.min.js
+"use strict";var has=Object.prototype.hasOwnProperty,prefix="~";function Events(){}function EE(e,t,n){this.fn=e,this.context=t,this.once=n||!1}function addListener(e,t,n,r,i){if("function"!=typeof n)throw new TypeError("The listener must be a function");var o=new EE(n,r||e,i),s=prefix?prefix+t:t;return e._events[s]?e._events[s].fn?e._events[s]=[e._events[s],o]:e._events[s].push(o):(e._events[s]=o,e._eventsCount++),e}function clearEvent(e,t){0==--e._eventsCount?e._events=new Events:delete e._events[t]}function EventEmitter(){this._events=new Events,this._eventsCount=0}Object.create&&(Events.prototype=Object.create(null),(new Events).__proto__||(prefix=!1)),EventEmitter.prototype.eventNames=function(){var e,t,n=[];if(0===this._eventsCount)return n;for(t in e=this._events)has.call(e,t)&&n.push(prefix?t.slice(1):t);return Object.getOwnPropertySymbols?n.concat(Object.getOwnPropertySymbols(e)):n},EventEmitter.prototype.listeners=function(e){var t=prefix?prefix+e:e,n=this._events[t];if(!n)return[];if(n.fn)return[n.fn];for(var r=0,i=n.length,o=new Array(i);r<i;r++)o[r]=n[r].fn;return o},EventEmitter.prototype.listenerCount=function(e){var t=prefix?prefix+e:e,n=this._events[t];return n?n.fn?1:n.length:0},EventEmitter.prototype.emit=function(e,t,n,r,i,o){var s=prefix?prefix+e:e;if(!this._events[s])return!1;var f,c,v=this._events[s],a=arguments.length;if(v.fn){switch(v.once&&this.removeListener(e,v.fn,void 0,!0),a){case 1:return v.fn.call(v.context),!0;case 2:return v.fn.call(v.context,t),!0;case 3:return v.fn.call(v.context,t,n),!0;case 4:return v.fn.call(v.context,t,n,r),!0;case 5:return v.fn.call(v.context,t,n,r,i),!0;case 6:return v.fn.call(v.context,t,n,r,i,o),!0}for(c=1,f=new Array(a-1);c<a;c++)f[c-1]=arguments[c];v.fn.apply(v.context,f)}else{var p,l=v.length;for(c=0;c<l;c++)switch(v[c].once&&this.removeListener(e,v[c].fn,void 0,!0),a){case 1:v[c].fn.call(v[c].context);break;case 2:v[c].fn.call(v[c].context,t);break;case 3:v[c].fn.call(v[c].context,t,n);break;case 4:v[c].fn.call(v[c].context,t,n,r);break;default:if(!f)for(p=1,f=new Array(a-1);p<a;p++)f[p-1]=arguments[p];v[c].fn.apply(v[c].context,f)}}return!0},EventEmitter.prototype.on=function(e,t,n){return addListener(this,e,t,n,!1)},EventEmitter.prototype.once=function(e,t,n){return addListener(this,e,t,n,!0)},EventEmitter.prototype.removeListener=function(e,t,n,r){var i=prefix?prefix+e:e;if(!this._events[i])return this;if(!t)return clearEvent(this,i),this;var o=this._events[i];if(o.fn)o.fn!==t||r&&!o.once||n&&o.context!==n||clearEvent(this,i);else{for(var s=0,f=[],c=o.length;s<c;s++)(o[s].fn!==t||r&&!o[s].once||n&&o[s].context!==n)&&f.push(o[s]);f.length?this._events[i]=1===f.length?f[0]:f:clearEvent(this,i)}return this},EventEmitter.prototype.removeAllListeners=function(e){var t;return e?(t=prefix?prefix+e:e,this._events[t]&&clearEvent(this,t)):(this._events=new Events,this._eventsCount=0),this},EventEmitter.prototype.off=EventEmitter.prototype.removeListener,EventEmitter.prototype.addListener=EventEmitter.prototype.on,EventEmitter.prefixed=prefix,EventEmitter.EventEmitter=EventEmitter,"undefined"!=typeof module&&(module.exports=EventEmitter);
+
+(function(global) {
+	const POLLING = Symbol('polling');
+
+	const controller       = Controller.SSO.Login;
+	const template         = Template.SSO.Login;
+	const default_profiles = controller.$context.profiles;
+	const force_auth       = controller.$context.force_auth;
+	const focus_url        = controller.$context.focus_url;
+
+	// Get a login URL for an SSO profile
+	function getLoginUrl(profile, username) {
+		const { token } = profile;
+		const url       = new URL(`${focus_url}/redirect.php`);
+
+		// Add the device token to the URL
+		url.searchParams.set('login', token);
+
+		// Set the optional 'force_auth' parameter
+		if(force_auth || profile.force_auth) {
+			url.searchParams.set('force_auth', 1);
+		}
+
+		// Set the optional 'offline' parameter
+		if(profile.offline) {
+			url.searchParams.set('offline', 1);
+		}
+
+		// Set the optional 'username' parameter
+		if(username !== undefined) {
+			url.searchParams.set('username', username);
+		}
+
+		// Return the login URL
+		return `${url}`;
+	}
+
+
+	/**
+	 * The Login class is used to render SSO login buttons
+	 * @param {Number}  target    One of the Login.TARGET constants (defaults to Login.TARGET.SELF)
+	 * @param {Array}   profiles  An array of profile definitions (defaults to all enabled SSO profiles)
+	 * @param {Boolean} auth_only If true, do not log the user into Focus
+	 */
+	class Login extends EventEmitter {
+		constructor(target, profiles, auth_only, show_disabled) {
+			super();
+
+			// Default target
+			this.target = target || Login.TARGETS.SELF;
+
+			// Default to SSO profiles that can be used for login
+			this.profiles = profiles || default_profiles;
+
+			// Default to logging the user in to Focus
+			this.auth_only = auth_only || false;
+
+			// Default to showing enabled profiles only
+			this.show_disabled = show_disabled || false;
+
+			// Add login URLs to each profile
+			for(let profile of this.profiles) {
+				profile.url = getLoginUrl(profile);
+			}
+		}
+
+		// Render SSO login buttons
+		render(el, options) {
+			// Clone the options
+			const context  = JSON.parse(JSON.stringify(options || {}));
+			const profiles = this.show_disabled ? this.profiles : this.profiles.filter(({ enabled }) => enabled);
+
+			// Add SSO profiles to the context
+			Object.assign(context, { profiles });
+
+			// Options that control the UI
+			context.target_blank = this.target === Login.TARGETS.BLANK;
+			context.assets_url   = `${focus_url}/assets`;
+
+			// Create the SSO menu
+			$(el).prepend(template(context));
+
+			// For each profile
+			for(let profile of profiles) {
+				// Get the login button
+				const { profile_id } = profile;
+				const link           = el.querySelector(`.sso-login-button[data-sso-profile-id="${profile_id}"]`);
+
+				// When the login link is clicked
+				link.addEventListener('click', (e) => {
+					// Emit the 'login' event
+					this.emit('login', e, link.getAttribute('href'), profile);
+
+					// Start polling for device sessions from this profile
+					this.poll(profile);
+				});
+
+				// When right-clicking on the login link
+				link.addEventListener('contextmenu', () => {
+					// Start polling for device sessions from this profile
+					this.poll(profile);
+				});
+			}
+		}
+
+		// Listen for changes to a username input and redirect to an SSO profile
+		redirect(el) {
+			el.addEventListener('change', (e) => {
+				// Ignore whitespace and do a case-insensitive comparison
+				const lower_username = e.target.value.trim().toLowerCase();
+
+				// For each SSO profile
+				for(let profile of this.profiles) {
+					const { button } = profile;
+
+					// If this profile does not have a redirect suffix, skip it
+					if(!button.redirect_suffix || !button.redirect_suffix.length) {
+						continue;
+					}
+
+					// Ignore whitespace and do a case-insensitive comparison
+					const lower_suffix = button.redirect_suffix.trim().toLowerCase();
+
+					// If the username matches the redirect suffix
+					if(lower_username.substr(-lower_suffix.length) === lower_suffix) {
+						// Get the login URL
+						const url = getLoginUrl(profile, e.target.value);
+
+						// Emit the 'login' event
+						this.emit('login', e, url, profile);
+
+						// If the event was not cancelled
+						if(!e.defaultPrevented) {
+							// If the target is "_blank"
+							if(this.target) {
+								// Open a window
+								window.open(url, '_blank', "noreferrer");
+							}
+							// Otherwise, navigate
+							else {
+								document.location.href = url;
+							}
+						}
+
+						// Start polling for device sessions from this profile
+						this.poll(profile);
+					}
+				}
+			});
+		}
+
+		// Poll for new sessions for the given device token
+		async poll(profile, next) {
+			if(next || !profile[POLLING]) {
+				let keep_polling = true;
+
+				// Set the polling flag for this profile
+				profile[POLLING] = true;
+
+				// Get any new auth tokens
+				for(const { token, usernames, error } of await controller.poll(profile.token, this.auth_only)) {
+					// Emit an 'auth' event
+					this.emit('auth', token, usernames, error);
+
+					// If a user might have been logged in to Focus, reload
+					if(!this.auth_only) {
+						// Get the current URL
+						const url = new URL(window.location.href);
+
+						// If there was an error, append the "sso_error" parameter
+						if(error) {
+							url.searchParams.set('sso_error', '1');
+						}
+
+						window.location.replace(url);
+					}
+
+					// Do not keep polling
+					keep_polling = false;
+				}
+
+				// Continue polling
+				if(keep_polling) {
+					setTimeout(() => this.poll(profile, true), 1000);
+				}
+				// Otherwise
+				else {
+					// Clear the polling flag for this profile
+					profile[POLLING] = false;
+				}
+			}
+		}
+
+		// Get a short URL for a device token
+		static async getShortUrl(device_token) {
+			return await controller.getShortUrl(device_token);
+		}
+	}
+
+	// Add static properties
+	Object.assign(Login, {
+		DEFAULT_PROFILES : default_profiles,
+		TARGETS          : { SELF : 0, BLANK : 1, EVENT : 2 },
+	});
+
+	global.SSO       = global.SSO || {};
+	global.SSO.Login = Login;
+})(window);

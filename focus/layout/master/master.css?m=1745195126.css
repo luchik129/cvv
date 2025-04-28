@@ -1,0 +1,428 @@
+html {
+	box-sizing: border-box;
+	/* font-family: Myriad Pro Semi Bold, Verdana, Tahoma, sans-serif; */
+	font-family : Lato, 'Helvetica Neue', Arial, Helvetica, sans-serif;
+	font-size   : 14px;
+}
+
+body {
+	position: relative;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	overflow: hidden;
+}
+
+body[lang="fr"] .or:before {
+	content : 'ou' !important;
+}
+
+.automation-blur-element {
+	position : fixed;
+	z-index  : 99999999;
+	bottom   : 0;
+	right    : 0;
+	width    : 10px;
+	height   : 10px;
+}
+
+button:not([disabled]),
+label,
+select:not([disabled]),
+input[type="checkbox"]:not([disabled]),
+input[type="radio"]:not([disabled]) {
+	cursor: pointer;
+}
+
+button.plain:not(.focus-button) {
+	border: 0;
+	background: transparent;
+	font: inherit;
+	line-height: 1;
+}
+
+button.plain:not(.focus-button),
+button.plain:not(.focus-button):active {
+	padding: 0;
+}
+
+button::-moz-focus-inner {
+	border: 0;
+	padding: 0;
+}
+
+template {
+	display: none !important;
+}
+
+.hidden {
+	display: none !important;
+}
+
+.hidden-opacity {
+	opacity: 0 !important;
+}
+
+.link {
+	color: #00F !important;
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.link:hover {
+	text-decoration: underline;
+}
+
+.inline-block {
+	display: inline-block;
+}
+
+.align-left {
+	text-align: left;
+}
+
+.align-center {
+	text-align: center;
+}
+
+.align-right {
+	text-align: right;
+}
+
+.focus-button {
+	position : relative;
+	display  : inline-block;
+	color    : inherit;
+	cursor   : pointer;
+}
+
+.focus-button:not(.plain) {
+	padding         : 0.25rem 0.5rem;
+	border          : 1px solid rgba(0, 0, 0, 0.2);
+	border-radius   : 3px;
+	background      : #E8E8E8;
+	color           : #000;
+	text-decoration : none;
+}
+
+.focus-button:not(:disabled):not(.disabled):not(.loading)::after {
+	content        : '';
+	position       : absolute;
+	top            : 0;
+	right          : 0;
+	bottom         : 0;
+	left           : 0;
+	background     : transparent;
+	pointer-events : none;
+}
+
+.focus-button:not(:disabled):not(.disabled):not(.loading):hover::after {
+	background : rgba(0, 0, 0, 0.075);
+}
+
+.focus-button:not(:disabled):not(.disabled):not(.loading):active::after {
+	background : rgba(0, 0, 0, 0.1);
+}
+
+.focus-button:disabled,
+.focus-button.disabled {
+	background     : #ACACAC !important;
+	color          : rgba(0, 0, 0, 0.6) !important;
+	cursor         : default !important;
+	pointer-events : none !important;
+}
+
+.focus-button.loading {
+	color          : rgba(0, 0, 0, 0) !important;
+	pointer-events : none !important;
+}
+
+.focus-button.loading::after {
+	content          : '';
+	position         : absolute;
+	top              : 50%;
+	left             : 50%;
+	width            : 1rem;
+	height           : 1rem;
+	border           : 0.25rem solid rgba(0, 0, 0, 0.3);
+	border-top-color : rgba(255, 255, 255, 0.5);
+	border-radius    : 50%;
+	transform        : translate(-50%, -50%);
+	animation        : focus-button-loading 0.6s infinite linear;
+}
+
+.focus-button.red,
+.focus-button.green,
+.focus-button.blue,
+.focus-button.yellow,
+.focus-button.purple,
+.focus-button.orange,
+.focus-button.pink,
+.focus-button.teal {
+	border-color : transparent;
+	color        : #FFF;
+}
+
+.focus-button.white  { background-color : #FFF; }
+.focus-button.red    { background-color : #DB2828; }
+.focus-button.green  { background-color : #21BA45; }
+.focus-button.blue   { background-color : #2185D0; }
+.focus-button.yellow { background-color : #FBBD08; }
+.focus-button.purple { background-color : #A333C8; }
+.focus-button.orange { background-color : #F2711C; }
+.focus-button.pink   { background-color : #E03997; }
+.focus-button.teal   { background-color : #00B5AD; }
+
+.focus-link {
+	position : relative;
+	display  : inline-block;
+	color    : #4183C4;
+	cursor   : pointer;
+}
+
+.focus-link:hover {
+	text-decoration : underline;
+	color           : #458DD4;
+}
+
+.focus-link .fa {
+	vertical-align  : middle;
+	text-decoration : none;
+}
+
+.focus-link .fa:first-child {
+	margin-right : 0.25rem
+}
+
+.focus-link .fa:last-child {
+	margin-left : 0.25rem
+}
+
+.ui.button.gray {
+	cursor : default;
+}
+
+/* =============================================================================
+Layout
+============================================================================= */
+
+.site-container {
+	position: absolute;
+	display: -webkit-flex;
+	display: flex;
+	-webkit-flex-direction: column;
+	flex-direction: column;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	overflow: hidden;
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+.site-assets {
+	display: none;
+}
+
+.site-header {
+	z-index: 3;
+	-webkit-flex-shrink: 0;
+	flex-shrink: 0;
+}
+
+.site-middle {
+	position: relative;
+	z-index: 1;
+	display: -webkit-flex;
+	display: flex;
+	-webkit-flex-direction: column;
+	flex-direction: column;
+	-webkit-flex-grow: 1;
+	flex-grow: 1;
+	min-height: 0;
+}
+
+.site-menu-container {
+	z-index: 2;
+	-webkit-flex-shrink: 0;
+	flex-shrink: 0;
+}
+
+.site-content-container {
+	position: relative;
+	z-index: 1;
+	-webkit-flex-grow: 1;
+	flex-grow: 1;
+	background: rgb(255, 255, 255);
+}
+
+.site-content {
+	position: absolute;
+	top: 0;
+	right: 0;
+	left: 0;
+	bottom: 0;
+	overflow: auto;
+}
+
+.site-footer {
+	z-index: 2;
+	-webkit-flex-shrink: 0;
+	flex-shrink: 0;
+}
+
+.site-legacy .site-content-container {
+	height: 100%;
+}
+
+.site-legacy .site-footer {
+	position: fixed;
+	bottom: 0;
+	right: 0;
+	left: 0;
+}
+
+.site-layout-hidden .site-header,
+.site-layout-hidden .site-menu,
+.site-layout-hidden .site-footer {
+	display: none;
+}
+
+/* =============================================================================
+Inactive Year
+============================================================================= */
+
+.site-inactive-year .custom-background-color,
+.site-inactive-year .before-custom-background-color:before,
+.site-inactive-year .after-custom-background-color:after,
+.site-inactive-year .PopTable .ui-widget-header {
+	background-color: rgb(255, 0, 0) !important;
+	color: #FFF !important;
+}
+
+.site-inactive-year .custom-border-color,
+.site-inactive-year .before-custom-border-color:before,
+.site-inactive-year .after-custom-border-color:after {
+	border-color: rgb(255, 0, 0) !important;
+}
+
+.site-inactive-year .custom-color,
+.site-inactive-year .before-custom-color:before,
+.site-inactive-year .after-custom-color:after {
+	color: rgb(255, 0, 0) !important;
+}
+
+.site-inactive-year .custom-outline-color,
+.site-inactive-year .before-custom-outline-color:before,
+.site-inactive-year .after-custom-outline-color:after {
+	outline-color: rgb(255, 0, 0) !important;
+}
+
+/* =============================================================================
+Moved from Top.php
+============================================================================= */
+
+.site-content > .Box {
+	margin : 1rem auto;
+	width  : calc(100% - 4rem) !important;
+}
+
+.TabContents {
+	padding: 3px 4px;
+}
+
+.DarkGradientBG {
+	background-image: #FEFEFE;
+	padding: 0.2em;
+}
+
+.BoxContent,
+.BoxContentBackground {
+	background-color: #FFF;
+}
+
+.BoxContentDiv {
+	padding: 5px;
+}
+
+.hilite,
+.hilite1,
+.hil_row,
+.GradebookHighlight {
+	background-color: #749FFF !important;
+}
+
+#print_iframe {
+	position: absolute;
+	z-index: 99;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+}
+
+.datePicker {
+	position: absolute;
+	-webkit-transform: translateX(-100%);
+	transform: translateX(-100%);
+}
+
+@media screen and (max-width: 600px) {
+	html {
+		font-size : 12px !important;
+	}
+}
+
+@media screen and (max-width: 450px) {
+	html {
+		font-size : 10.5px !important;
+	}
+}
+
+@media screen and (max-width: 350px) {
+	html {
+		font-size : 9.5px !important;
+	}
+}
+
+@media screen and (max-width: 320px) {
+	html {
+		font-size : 9px !important;
+	}
+}
+
+@keyframes focus-button-loading {
+	0% {
+		transform: translate(-50%, -50%) rotate(0deg);
+	}
+
+	100% {
+		transform: translate(-50%, -50%) rotate(360deg);
+	}
+}
+
+/* =============================================================================
+Session Value Changes
+============================================================================= */
+
+.focus-session-highlight {
+	animation: focus-session-highlight 0.75s ease-in-out 0s 2 normal forwards;
+}
+
+@keyframes focus-session-highlight {
+	0% {
+		opacity: 1;
+	}
+
+	50% {
+		opacity: 0.25;
+	}
+
+	100% {
+		opacity: 1;
+	}
+}

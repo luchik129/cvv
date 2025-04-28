@@ -1,0 +1,14 @@
+.sso-menu-container.sso-linked-accounts {
+	max-width : 100%;
+}
+
+.sso-menu-container.sso-linked-accounts .button.button.button {
+	display : flex;
+	flex    : 1 1 auto;
+}
+
+.sso-menu-container.sso-linked-accounts .button .sso-button-text {
+	flex          : 0 1 auto;
+	overflow      : hidden;
+	text-overflow : ellipsis;
+}

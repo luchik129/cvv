@@ -1,0 +1,43 @@
+(function() {
+	if (typeof Focus == 'undefined' || !Focus) {
+		Focus = {};
+	}
+
+	Focus.Templates = {
+		cache: {}
+	};
+
+	function render(template, context) {
+		var id = template + '-template';
+
+		if(!Focus.Templates.cache[id]) {
+			var script = document.getElementById(id);
+
+			if(!script) {
+				throw new Error('Template ' + template + ' does not exist!');
+			}
+
+			var source   = script.innerHTML;
+			var compiled = Handlebars.compile(source);
+
+			// Cache template in global Focus.templates var
+			Focus.Templates.cache[id] = compiled;
+		}
+
+		return Focus.Templates.cache[id].call(this, context);
+	}
+
+	function print(template, context) {
+		var html   = render(template, context);
+		var $html  = $(html);
+		var script = document.scripts[document.scripts.length - 1];
+
+		$html.find('.swiftbox').trigger('initialize');
+		$html.find('.dataTable').trigger('initialize');
+
+		$(script).replaceWith($html);
+	}
+
+	Focus.Templates.render = render;
+	Focus.Templates.print  = print;
+}());

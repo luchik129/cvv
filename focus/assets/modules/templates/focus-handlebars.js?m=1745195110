@@ -1,0 +1,76 @@
+(function(global) {
+	if(global.Handlebars === undefined) {
+		return;
+	}
+
+	// Register the translation helper
+	global.Handlebars.registerHelper('t', function(options) {
+		const _t = window.t || ((v) => v);
+
+		if(!options) {
+			return options;
+		}
+
+		if(options instanceof global.Handlebars.SafeString) {
+			return new global.Handlebars.SafeString(_t(options.string));
+		}
+
+		return typeof options === 'string' ? _t(options) : _t(options.fn(this));
+	});
+
+	global.Template = global.Template || {};
+
+	// Render a template with a given context and compile function
+	function renderTemplate(template, context, compile, this_obj) {
+		this_obj = this_obj || this;
+
+		if(!template.__compiled__) {
+			template.__compiled__ = compile(template.innerHTML, {
+				preventIndent : true,
+			});
+		}
+
+		return template.__compiled__.call(this_obj, context);
+	}
+
+	// Register Handlebars templates
+	var selector   = 'script[type="text/x-handlebars-template"]';
+	var elements   = global.document.querySelectorAll(selector);
+	var compile    = global.Handlebars.compile;
+
+	for(var i = 0; i < elements.length; i++) {
+		var element = elements[i];
+		var name    = element.getAttribute('data-name');
+
+		// Add this template to the global Templates object
+		if(name) {
+			name = name.replace(/^[^a-zA-Z_.]+|[^a-zA-Z_.0-9-]+/g, '_');
+
+			var namespace = name.split(/[.-]/);
+			var template  = namespace.pop();
+
+			// Traverse into the namespace
+			var current = global.Template;
+
+			while(namespace.length) {
+				// Make sure the namespace exists
+				current[namespace[0]] = current[namespace[0]] || {};
+
+				// Traverse into the next level
+				current = current[namespace[0]];
+
+				// Remove one level from the namespace
+				namespace.shift();
+			}
+
+			// Register all templates as partials
+			var source  = element.innerHTML;
+
+			current[template] = function(element, context, this_obj) {
+				return renderTemplate(element, context, compile, this_obj);
+			}.bind(this, element);
+
+			global.Handlebars.registerPartial(name, source);
+		}
+	}
+}(window));

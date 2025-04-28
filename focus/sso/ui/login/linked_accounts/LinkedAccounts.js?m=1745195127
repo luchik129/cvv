@@ -1,0 +1,173 @@
+(function(global) {
+	var template   = Template.SSO.LinkedAccounts;
+	var controller = Controller.SSO.LinkedAccounts;
+	var profiles   = controller.$context.profiles;
+	var accounts   = Promise.resolve(controller.$context.accounts);
+
+	function LinkedAccounts() {
+		var events             = new EventEmitter();
+		var linked_account_ids = new Set();
+
+		// Refresh a linked account
+		function refreshAccount(el, account) {
+			var selector     = '.sso-login-button[data-sso-profile-id="' + account.profile_id + '"]';
+			var login_button = el.querySelector(selector);
+
+			// If there is no login button for this SSO profile, skip refreshing
+			if(!login_button) {
+				return;
+			}
+
+			// This profile is now linked
+			if(!linked_account_ids.has(account.id)) {
+				linked_account_ids.add(account.id);
+
+				// Emit a 'link' event
+				events.emit('link', account, linked_account_ids);
+			}
+
+			// Render the unlink button template
+			var unlink_container = document.createElement('div');
+			var parent           = login_button.parentElement;
+
+			unlink_container.innerHTML = template.unlink({
+				username   : account.user_info.email,
+				profile_id : account.profile_id,
+			});
+
+			// Get the unlink button element
+			var unlink_button = unlink_container.querySelector('.sso-unlink-button');
+
+			// Insert the unlink button
+			parent.insertBefore(unlink_button, login_button);
+
+			// Remove the login button
+			parent.removeChild(login_button);
+
+			unlink_button.addEventListener('click', function(e) {
+				e.preventDefault();
+
+				Focus.confirm("Are you sure you want to unlink this account?", function(confirmed) {
+					if(confirmed) {
+						controller.unlinkAccount(account.id).then(function() {
+							// This profile is now unlinked
+							linked_account_ids.delete(account.id);
+
+							// Emit an 'unlink' event
+							events.emit('unlink', account.id, linked_account_ids);
+						}).catch(function(error) {
+							Focus.alert(error);
+						}).finally(function() {
+							// Restore the login button after catching errors,
+							// since the account *may* have been unlinked already
+							parent.insertBefore(login_button, unlink_button);
+							parent.removeChild(unlink_button);
+						});
+					}
+				});
+			});
+		}
+
+		// Refresh linked accounts
+		function refresh(el, skip_update) {
+			if(!skip_update) {
+				// Update the cached linked accounts
+				accounts = controller.getLinkedAccounts();
+			}
+
+			accounts.then(function(accounts) {
+				accounts.forEach(function(account) {
+					refreshAccount(el, account);
+				});
+			}).catch(function(error) {
+				console.warn(error);
+			});
+		}
+
+		// Render the Google Sign In linked accounts UI
+		function renderGoogleSignIn(el, options) {
+			// Get the SSO linked account profiles
+			const la_profiles = SSO.Login.DEFAULT_PROFILES.filter(function({ profile_type, profile_id }) {
+				// Limit to Google Sign In profiles
+				if(profile_type !== 'GoogleSignInProvider') {
+					return false;
+				}
+
+				// Get the linked account profile details
+				const profile = profiles.find((p) => p.profile_id === profile_id);
+
+				// Limit to linked account profiles
+				if(!profile) {
+					return false;
+				}
+
+				// Limit profiles by school
+				if(controller.$context.school) {
+					// Get the schools for this profile
+					const schools = profile.schools || [];
+
+					// Use this profile if the current school is selected, or if no schools are selected
+					if(schools.length && !schools.includes(controller.$context.school)) {
+						return false;
+					}
+				}
+
+				return true;
+			});
+
+			// Request offline access
+			for(let profile of la_profiles) {
+				profile.offline = true;
+			}
+
+			// Create the SSO login UI
+			var login = new SSO.Login(SSO.Login.TARGETS.BLANK, la_profiles, true, true);
+
+			// When an account is authenticated
+			login.on('auth', function(token) {
+				// Create the linked account
+				controller.linkAccount(token).then(function() {
+					// ...and refresh the UI
+					refresh(el);
+				}).catch(function(error) {
+					Focus.alert(error);
+				});
+			});
+
+			// Set default options
+			options = Object.assign({}, options || {}, {
+				menu_class : ((options || {}).menu_class || '') + ' sso-linked-accounts',
+			});
+
+			// Render the login buttons
+			login.render(el, options);
+
+			// Initialize the login buttons without updating linked accounts
+			refresh(el, true);
+
+			// Refresh the SSO buttons whenever the window regains focus
+			window.addEventListener('focus', function() {
+				refresh(el);
+			});
+		}
+
+		// Emit initial 'link' events for currently-linked accounts
+		accounts.then(function(accounts) {
+			accounts.forEach(function(account) {
+				linked_account_ids.add(account.id);
+				events.emit('link', account, linked_account_ids);
+			});
+		});
+
+		// Expose functions for rendering different SSO types
+		this.renderGoogleSignIn = renderGoogleSignIn;
+
+		// Proxy events
+		this.on   = events.on.bind(events);
+		this.once = events.once.bind(events);
+		this.off  = events.off.bind(events);
+	}
+
+	global.SSO                = global.SSO || {};
+	global.SSO.LinkedAccounts = LinkedAccounts;
+})(window);

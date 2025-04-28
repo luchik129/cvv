@@ -1,0 +1,319 @@
+(function($) {
+	'use strict';
+
+	var Focus = window.Focus = window.Focus || {};
+
+	// Return to the login template once a QR code expires
+	let sso_return_timeout = null;
+
+	$(function() {
+		var template   = Focus.login_template ? Focus.login_template : 'login';
+		var mfa_qr_uri = App.context.mfa_qr_uri || null;
+
+		loadTemplate(template, {mfa_qr_uri});
+
+		$('.login-input:visible').first().focus();
+
+		showAppLink();
+	});
+
+	$(document)
+		.on('submit', 'form', function(e) {
+			e.preventDefault();
+		})
+		.on('click', '.action-link', function(e) {
+			e.preventDefault();
+		})
+
+		// Default login
+		.on('submit', '#main-login-form', loginHandler)
+
+		// Handle the 2FA forms
+		.on('submit', '#two-factor-auth-form, #secret-form', googleAuthHandler)
+
+		// Register/add a new user
+		.on('submit', '.register-form', registerTempUser)
+
+		// Forgot password form
+		.on('submit', '.forgot-password-form', forgotPassword)
+
+		// New password entry form.
+		.on('submit', '.reset-password-form', resetPassword)
+
+		// Clicking a link to load a template
+		.on('click', '.action-link', function() {
+			loadTemplate.call(this);
+		});
+
+	function loading(form, loaded) {
+		var $form    = $(form);
+		var $loading = $form.find('.form-loading');
+		// disable login button after clicked
+		$form.find('.form-button').prop('disabled', true);
+		$loading.toggleClass('hidden-opacity', !!loaded);
+	}
+
+	function error(form, message) {
+		loading(form, true);
+
+		var $form  = $(form);
+		var $error = $form.find('.form-error');
+
+		$error
+			.html(message)
+			.removeClass('hidden-opacity', !message);
+		// if error, enable login button
+		$form.find('.form-button').prop('disabled', false);
+	}
+
+	/**
+	 * Load all the different types of templates
+	 * @return {[type]} [description]
+	 */
+	function loadTemplate(template, context) {
+		var $this = $(this);
+		template  = template || $this.attr('data-template');
+		context   = context || {};
+
+		// Render the template
+		var $html = $(Focus.Templates.render(template, context));
+
+		$('.login-content').html($html);
+
+		// Render any QR codes
+		for(let el of $html[0].querySelectorAll('.qr-code[data-qr]')) {
+			new QRCode(el, el.dataset.qr);
+		}
+
+		// Initialize SSO
+		var sso_ui_container = document.querySelector('.sso-ui-container');
+		var sso_container    = document.querySelector('.sso-container');
+		var sso_redirect     = document.querySelector('#username-input');
+
+		// Cancel any existing timeout
+		if(sso_return_timeout !== null) {
+			clearTimeout(sso_return_timeout);
+		}
+
+		if(sso_container && SSO.Login.DEFAULT_PROFILES.length) {
+			// Login UI
+			const sso_login = new SSO.Login();
+
+			sso_login.on('login', async (e, url, provider) => {
+				if(provider.qr_code) {
+					// Prevent navigation
+					e.preventDefault();
+
+					// Add the loading class to the button
+					e.target.closest('.ui.button').classList.add('loading');
+
+					// Shorten the URL
+					url = await SSO.Login.getShortUrl(url);
+
+					// Load the QR code template
+					loadTemplate('sso-qr-code', { url });
+
+					// Return to the login template after some time
+					sso_return_timeout = setTimeout(function() {
+						loadTemplate('login');
+					}, 30000);
+				}
+			});
+
+			// Display the SSO UI
+			sso_ui_container.classList.remove('hidden');
+
+			// Render the SSO menu
+			sso_login.render(sso_container);
+
+			// Listen for SSO redirects
+			if(sso_redirect) {
+				sso_login.redirect(sso_redirect);
+			}
+		}
+
+		// Display SSO errors
+		if(App.context.sso_error) {
+			var error_container = document.querySelector('.login-form .form-error');
+
+			if(error_container) {
+				// Display the error if there is one
+				error_container.innerText = App.context.sso_error;
+
+				// Show the error container
+				error_container.classList.remove('hidden-opacity');
+			}
+		}
+
+		// Display custom login HTML
+		if(Focus.customLogin && Focus.customLogin.enabled) {
+			var $container = $('.login-custom');
+
+			if($container.length > 0) {
+				var html = Focus.customLogin.html.replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+				// Create a container to allow the browser to parse and fix the custom HTML
+				var container = document.createElement('div');
+
+				container.innerHTML = html;
+
+				$('.login-custom').removeClass('hidden').html(container.innerHTML);
+			}
+		}
+
+		return $html;
+	}
+
+	function formHandler(form, request = {}) {
+		// Add the form data to the request
+		request['data'] = $(form).serialize();
+
+		// Reset the error/loading state
+		error(form, '');
+		loading(form);
+
+		$.post(document.location.href, request)
+			.done((response) => {
+				response = JSON.parse(response);
+
+				// If the login succeeded, reload the page
+				if(response.success) {
+					window.location.reload();
+				}
+				// Otherwise, display the error
+				else if(response.error) {
+					error(form, response.error);
+				}
+			})
+			.fail(() => {
+				error(form, 'An error has occurred');
+			});
+	}
+
+	function loginHandler() {
+		return formHandler(this, {
+			login : true,
+		});
+	}
+
+	function googleAuthHandler() {
+		return formHandler(this, {
+			two_factor_auth : true,
+		});
+	}
+
+	function registerTempUser() {
+		var self        = this;
+		var $this       = $(this);
+		var header_text = [];
+		var context;
+
+		var request = {
+			registration : true,
+			action       : 'registerTempUser',
+			data         : {
+				form_data : $this.serialize() + '&registration=true'
+			}
+		};
+
+		error(self, '');
+		loading(self);
+
+		$.post(document.location.href, request)
+			.done(function(response) {
+				response = JSON.parse(response);
+
+				if(!response.error) {
+					header_text.push('An email has been sent to the provided email address.');
+					header_text.push('Please follow the instructions to confirm your account.');
+
+					context = {
+						header_text : header_text.join(' ')
+					};
+
+					loadTemplate('default', context);
+				}
+				else {
+					error(self, response.error);
+				}
+			})
+			.fail(function() {
+				error(self, 'An error has occurred');
+			});
+	}
+
+	function forgotPassword() {
+		var self  = this;
+		var $this = $(this);
+		var header_text;
+		var context;
+
+		var request = {
+			registration : true,
+			action       : 'forgotPassword',
+			data         : {
+				form_data : $this.serialize()
+			}
+		};
+
+		error(self, '');
+		loading(self);
+
+		$.post(document.location.href, request)
+			.done(function(response) {
+				response = JSON.parse(response);
+
+				if(!response.error) {
+					header_text = 'An email has been sent with instrustions to reset your password.';
+
+					context = {
+						header_text : header_text
+					};
+
+					loadTemplate('default', context);
+				}
+				else {
+					error(self, response.error);
+				}
+			})
+			.fail(function() {
+				error(self, 'An error has occurred');
+			});
+	}
+
+	function resetPassword() {
+		var $this = $(this);
+	}
+
+	function showAppLink() {
+		var user_agent = navigator.userAgent.toLowerCase();
+		var html       = null;
+
+		if(user_agent.indexOf('android') !== -1 && Focus.mobileAppIds.android) {
+			html = Focus.Templates.render('mobile-app', {
+				type : 'Android',
+				href : 'http://play.google.com/store/apps/details?id=' + Focus.mobileAppIds.android,
+			});
+		}
+
+		if(html) {
+			var $container = $('.mobile-app-link-container');
+
+			$container.html(html);
+		}
+	}
+
+	//extend RegExp class to escape regex characters
+	function escapeRegExp(string) {
+		string = string || '';
+
+		return string.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+	}
+
+	function endsWith(string, suffix) {
+		string = string || '';
+		suffix = suffix || '';
+
+		return string.indexOf(suffix, string.length - suffix.length) !== -1;
+	}
+}(jQuery));
